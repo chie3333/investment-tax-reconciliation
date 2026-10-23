@@ -1,0 +1,12 @@
+data/
+*.db
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+__pycache__/
+*.py[cod]
+.env
+.env.*
+!.env.example
+.DS_Store
+.pytest_cache/

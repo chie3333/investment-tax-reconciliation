@@ -1,0 +1,667 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>투자자산 세무조정 워크스페이스</title><style>
+:root{font-family:Inter,'Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;color:#182437;background:#f4f6fa}*{box-sizing:border-box}body{margin:0}button,input,select,textarea{font:inherit}button{cursor:pointer}.shell{display:flex;min-height:100vh}.side{width:248px;background:#172438;color:#dbe5f2;padding:26px 15px;flex-shrink:0}.brand{font-weight:800;color:white;font-size:19px;line-height:1.4;margin:0 10px 27px}.brand small{display:block;color:#a4b5c9;font-weight:500;font-size:11px;letter-spacing:1.2px;margin-top:5px}.nav{width:100%;text-align:left;border:0;background:transparent;color:#b9c7d8;padding:12px 14px;border-radius:9px;margin-bottom:5px}.nav.active,.nav:hover{background:#2a3b55;color:white}.side-note{font-size:12px;color:#8da1ba;line-height:1.6;margin:26px 12px}.main{flex:1;min-width:0;padding:30px 38px 70px;max-width:1580px}.top{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:23px}.top h1{margin:0;font-size:26px;letter-spacing:-.8px}.muted{color:#748197;font-size:13px}.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid #d8e0eb;background:#fff;color:#243a58;padding:9px 13px;border-radius:8px;font-weight:650;font-size:13px}.btn.primary{background:#315eae;color:#fff;border-color:#315eae}.btn.danger{color:#ac3b3b}.btn:hover{filter:brightness(.97)}.section{display:none}.section.active{display:block}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.card{background:white;border:1px solid #e2e7ef;border-radius:13px;padding:20px;box-shadow:0 2px 8px #1b36500a}.metric .k{font-size:12px;color:#697a90}.metric .v{font-size:25px;font-weight:800;margin:12px 0 4px}.metric .sub{font-size:12px;color:#8c98a9}.panel{background:white;border:1px solid #e2e7ef;border-radius:13px;padding:21px;margin-top:18px}.panel h2{font-size:17px;margin:0 0 15px}.panel h3{font-size:14px;margin:17px 0 10px}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}.panel-head h2{margin:0}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}th{text-align:left;color:#6d7e95;font-size:12px;font-weight:650;background:#f8fafd}td,th{padding:12px 11px;border-bottom:1px solid #edf0f5}td{color:#293b52}tr:last-child td{border:0}.tag{display:inline-block;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;background:#e9f0ff;color:#315ca7}.tag.oci{background:#eaf7ef;color:#22764a}.tag.warn{background:#fff2e4;color:#a55c0b}.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}.formgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.field{display:flex;flex-direction:column;gap:6px}.field.full{grid-column:1/-1}label{font-size:12px;font-weight:650;color:#52647d}input,select,textarea{border:1px solid #d7dfeb;border-radius:8px;padding:10px 11px;width:100%;background:white;color:#17283e;min-width:0}textarea{min-height:65px;resize:vertical}input:focus,select:focus{outline:2px solid #bfd0f3;border-color:#5a7fc1}.hint{font-size:12px;color:#738298;line-height:1.7;margin:10px 0}.notice{padding:12px 14px;border-radius:9px;background:#f0f5fc;color:#375579;font-size:13px;line-height:1.7;margin-bottom:15px}.empty{text-align:center;color:#8b97a8;padding:30px 10px}.form-actions{display:flex;justify-content:flex-end;margin-top:17px}.pillrow{display:flex;gap:7px;margin-bottom:15px;flex-wrap:wrap}.pill{border:1px solid #dce3ed;border-radius:20px;background:white;padding:8px 14px;font-size:12px;color:#586b83}.pill.active{background:#244a85;border-color:#244a85;color:white}.subtle{font-size:12px;color:#8090a4}.alert{padding:12px;border-radius:8px;background:#fff6e7;color:#926014;font-size:12px;line-height:1.7}.toast{position:fixed;right:20px;bottom:20px;background:#203955;color:white;padding:12px 17px;border-radius:10px;box-shadow:0 8px 25px #172a4140;display:none;z-index:10}.smallbtn{padding:5px 9px;font-size:11px}.summary{display:flex;gap:20px;flex-wrap:wrap;font-size:13px;color:#586a82}.summary strong{color:#213650}.separator{height:1px;background:#e9edf4;margin:20px 0}@media(max-width:1100px){.grid{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr}}@media(max-width:700px){.shell{display:block}.side{width:100%;padding:14px}.brand{margin:0 0 10px}.nav{display:inline-block;width:auto;padding:8px}.side-note{display:none}.main{padding:20px 14px}.top{align-items:flex-start;flex-direction:column}.grid{grid-template-columns:1fr 1fr}.formgrid{grid-template-columns:1fr}.metric .v{font-size:20px}}
+
+.rule-help{display:inline-flex;align-items:center;justify-content:center;margin-left:6px;width:19px;height:19px;border-radius:50%;border:1px solid #94a3b8;background:#f1f5f9;color:#334155;font-size:12px;font-weight:700;vertical-align:middle;cursor:pointer}.rule-help:hover,.rule-help:focus{background:#dbeafe;border-color:#2563eb;outline-offset:2px}.rule-overlay{position:fixed;inset:0;background:rgba(15,23,42,.58);z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px}.rule-dialog{width:min(620px,100%);max-height:85vh;overflow:auto;background:white;border-radius:16px;box-shadow:0 25px 80px #0004;padding:25px;line-height:1.65}.rule-dialog h2{margin:0 0 10px;font-size:21px}.rule-dialog h3{font-size:15px;margin:16px 0 6px}.rule-dialog p{margin:8px 0}.rule-dialog a{color:#1d4ed8;word-break:break-word}.rule-dialog .rule-top{display:flex;justify-content:space-between;align-items:start;gap:16px}.rule-dialog .rule-close{border:0;background:#eef2f7;border-radius:8px;padding:7px 11px;font-size:18px}.rule-dialog .rule-caution{background:#fff7ed;border-left:3px solid #d97706;padding:10px 12px;border-radius:4px}.rule-dialog .rule-ref{font-size:13px;color:#64748b}
+</style></head><body><div class="shell"><aside class="side"><div class="brand">투자자산 세무조정<small>INVESTMENT TAX WORKSPACE</small></div><nav id="nav"></nav><div class="side-note">브라우저에 저장되는 로컬 프로토타입<br>회계·세무 계산은 검증용 초안입니다.</div></aside><main class="main"><header class="top"><div><h1 id="pageTitle">대시보드</h1><div class="muted">투자자산 거래 · 공정가치 평가 · 세무조정 통합 관리</div></div><div class="actions"><button class="btn" onclick="exportData()">데이터 내보내기</button><button class="btn" onclick="document.getElementById('importJson').click()">백업 불러오기</button><input id="importJson" type="file" accept=".json" hidden onchange="importData(event)"></div></header>
+<section id="dashboard" class="section active"><div class="grid" id="metrics"></div><div class="panel"><div class="panel-head"><h2>투자자산 보유 현황</h2><button class="btn primary" onclick="go('trades')">+ 거래 입력</button></div><p class="hint">보유수량은 매수 − 매도 기준입니다. 회계 장부금액은 입력된 원가배분·평가 기록을 반영한 관리용 추정치입니다.</p><div class="table-wrap" id="dashboardHoldings"></div></div><div class="two"><div class="panel"><h2>최근 거래</h2><div id="recentTrades"></div></div><div class="panel"><h2>세무조정 및 유보</h2><div id="recentAdjustments"></div></div></div></section>
+<section id="assets" class="section"><div class="panel"><div class="panel-head"><h2>투자자산 관리</h2><button class="btn" onclick="go('master')">종목 마스터 관리</button></div><div class="notice">같은 종목도 FVOCI와 FVTPL은 서로 다른 asset_id로 관리합니다. 동일 종목·동일 분류의 반복 매수는 기존 asset_id에 연결됩니다.</div><div id="assetsTable"></div></div></section>
+<section id="trades" class="section"><div class="two"><div class="panel"><h2>거래 입력</h2><div class="pillrow"><button class="pill active" data-trade="BUY" onclick="tradeType('BUY')">매수 BUY</button><button class="pill" data-trade="SELL" onclick="tradeType('SELL')">매도 SELL</button><button class="pill" data-trade="DIVIDEND" onclick="tradeType('DIVIDEND')">배당 DIVIDEND</button></div><form id="tradeForm" onsubmit="saveTrade(event)"><div class="formgrid"><div class="field"><label>거래일자</label><input id="tDate" type="date" required></div><div class="field"><label>종목코드</label><input id="tStock" placeholder="예: 005930" maxlength="12" required oninput="updateStockHint()"></div><div class="field full"><div class="subtle" id="stockHint">종목코드를 입력하면 마스터에서 조회합니다.</div></div><div class="field" id="classField"><label>회계 분류</label><select id="tClass"><option value="FVTPL">FVTPL</option><option value="FVOCI">FVOCI</option></select></div><div class="field" id="assetField" style="display:none"><label>처리 대상 자산</label><select id="tAsset"></select></div><div class="field" id="qtyField"><label>수량 (주)</label><input id="tQty" type="number" min="1" step="1" placeholder="0"></div><div class="field" id="priceField"><label>주당 거래가격 (원)</label><input id="tPrice" type="number" min="0" step="any" placeholder="0"></div><div class="field full" id="amountField" style="display:none"><label>배당금액 (원)</label><input id="tAmount" type="number" min="0" step="any" placeholder="0"></div><div class="field full" id="costField" style="display:none"><label>매도분 취득원가 (원) — 자동 계산 (참고)</label><input id="tCost" type="number" min="0" step="any" placeholder="자동 계산됨 · 필요시 입력값 무시"></div><div class="field full" id="lotAllocationField" style="display:none"><label>개별법 취득 LOT 배분 (매수 거래ID:수량, 쉼표로 구분)</label><input id="tLotAllocation" placeholder="예: 12:30,15:20"><div class="hint">개별법 선택 시 필수입니다. 매수 거래 ID와 매도 수량을 연결합니다.</div></div><div class="field full"><label>적요</label><textarea id="tNote" placeholder="선택 입력"></textarea></div></div><div class="hint" id="tradeHelp">매수금액은 수량 × 단가로 계산합니다.</div><div class="form-actions"><button class="btn primary" type="submit">거래 저장</button></div></form></div><div class="panel"><h2>거래 입력 안내</h2><div class="notice">종목코드로 종목명·시장구분을 자동 조회합니다. 매도·배당은 기존 투자자산 중 처리 대상을 선택합니다.</div><p class="hint">회계상 원가배분은 총평균·이동평균·선입선출·개별법 중 선택(기본 총평균), 세법상은 총평균법(기본) 또는 이동평균법(신고 시)을 선택합니다. 연도 중 총평균 금액은 이후 취득으로 변경될 수 있습니다. 매도 후 음수 보유수량이 발생하지 않도록 검사합니다.</p><h3>선택한 종목의 보유 현황</h3><div id="tradeAssetPreview" class="subtle">종목을 입력해 주세요.</div><div class="separator"></div><h3>최근 거래내역</h3><div id="tradeHistory"></div></div></div></section>
+<section id="valuations" class="section"><div class="two"><div class="panel"><h2>공정가치 평가 입력</h2><form onsubmit="saveValuation(event)"><div class="formgrid"><div class="field"><label>평가일자</label><input id="vDate" type="date" required></div><div class="field"><label>평가 대상 투자자산</label><select id="vAsset" required></select></div><div class="field"><label>평가일 주당 공정가치 (원)</label><input id="vPrice" type="number" min="0" step="any" required></div><div class="field"><label>평가 직전 장부금액 (원) — 자동 계산</label><input id="vBefore" type="number" min="0" step="any" required></div><div class="field full"><label>적요</label><input id="vNote" placeholder="평가 관련 메모"></div></div><div class="hint">평가일 기준 보유수량 × 주당 공정가치 = 평가금액. 평가손익은 평가금액 − 입력한 평가 직전 장부금액으로 계산합니다. FVOCI는 누적 OCI 변동의 관리용 자료로 표시합니다.</div><div class="form-actions"><button class="btn primary">평가 기록 저장</button></div></form></div><div class="panel"><h2>평가 계산 미리보기</h2><div id="valuationPreview" class="notice">자산과 평가금액을 입력해 주세요.</div><div class="alert">동일 일자의 거래·평가 순서, 회계처리의 정확성 및 OCI 누적액은 추가 정책 확정이 필요합니다. 이 화면은 회계 분개를 자동 확정하지 않습니다.</div></div></div><div class="panel"><h2>공정가치 평가 이력</h2><div id="valuationHistory"></div></div></section>
+<section id="adjustments" class="section"><div class="two"><div class="panel"><h2>세무조정 입력</h2><form onsubmit="saveAdjustment(event)"><div class="formgrid"><div class="field"><label>조정일자</label><input id="aDate" type="date" required></div><div class="field"><label>투자자산</label><select id="aAsset" required></select></div><div class="field"><label>원천 이벤트 종류</label><select id="aSourceType" onchange="fillSources()"><option value="TRADE">거래</option><option value="VALUATION">공정가치 평가</option><option value="NONE">직접 조정</option></select></div><div class="field"><label>원천 이벤트</label><select id="aSource"></select></div><div class="field"><label>조정 유형</label><select id="aType"><option value="유보">유보</option><option value="△유보">△유보</option><option value="기타">기타</option><option value="기타사외유출">기타사외유출</option><option value="상여">상여</option><option value="배당">배당</option><option value="사내유보 외">사용자 지정 유형</option></select></div><div class="field"><label>익금·손금 구분</label><select id="aDirection"><option value="익금산입">익금산입</option><option value="손금산입">손금산입</option><option value="익금불산입">익금불산입</option><option value="손금불산입">손금불산입</option></select></div><div class="field"><label>조정금액 (원, 양수)</label><input id="aAmount" type="number" min="0.01" step="any" required></div><div class="field"><label>유보 증감액 (원, 부호 포함)</label><input id="aReserve" type="number" step="any" value="0" required></div><div class="field"><label>기존 조정 연결 (환입 등)</label><select id="aParent"></select></div><div class="field"><label>연속번호 (선택)</label><input id="aSequence" type="number" min="1" step="1" placeholder="자동 계산"></div><div class="field full"><label>조정 근거·메모</label><textarea id="aNote" placeholder="세무조정 판단 근거를 입력하세요"></textarea></div></div><div class="hint">하나의 거래에 여러 조정 행을 입력할 수 있습니다. 유보 증감액의 부호와 조정 유형은 사용자가 검토하여 입력합니다. 기말 유보는 유보 증감액 누계로 계산합니다.</div><div class="form-actions"><button class="btn primary">조정 저장</button></div></form></div><div class="panel"><h2>세무조정 관리 원칙</h2><div class="notice">조정 10,000원 중 7,000원이 유보, 3,000원이 다른 조정이라면 같은 원천 이벤트에 조정 행 2개를 등록합니다.</div><h3>유보 잔액</h3><div id="reservePreview"></div><div class="separator"></div><div class="alert">세무조정 자동 판단·법인세 신고서 작성 기능은 아직 구현하지 않았습니다. 실제 신고에는 해당 사업연도 세법 검토가 필요합니다.</div></div></div><div class="panel"><h2>세무조정 내역 · 유보 변동</h2><div id="adjustmentHistory"></div></div></section>
+<section id="reports" class="section"><div class="panel"><h2>종목별 통합 세무원가 대사</h2><p class="hint">회계분류별 세무장부금액은 동일 종목의 총 세무원가를 잔여 수량 비율로 배분한 표시금액입니다. 과거 거래별 원장과 FVOCI 기타/유보 대응은 별도 검토가 필요합니다.</p><div id="pooledReconciliation"></div></div><div class="panel"><div class="panel-head"><h2>회계·세무 금액 비교</h2><button class="btn" onclick="exportCsv('report')">CSV 내보내기</button></div><div class="notice">회계 장부금액과 세법상 장부금액은 거래·평가 이벤트를 시간순으로 재계산합니다. 세무조정은 규칙 적용 가능한 범위에서 자동 생성합니다. 신고용 결과가 아니며 법인별 예외 검토가 필요합니다.</div><div id="reportTable"></div></div><div class="panel"><h2>세법상 장부금액 직접 입력</h2><form class="formgrid" onsubmit="saveTaxBasis(event)"><div class="field"><label>투자자산</label><select id="bAsset" required></select></div><div class="field"><label>세법상 장부금액 (원)</label><input id="bAmount" type="number" step="any" min="0" required></div><div class="field full"><label>산정 근거</label><input id="bNote" placeholder="적용 기준, 계산 근거 등을 기록"></div><div class="field full"><button class="btn primary">세법상 장부금액 저장</button></div></form></div></section>
+<section id="master" class="section"><div class="two"><div class="panel"><h2>종목 마스터 CSV 가져오기</h2><div class="notice">CSV 첫 줄에 <code>stock_code,asset_name,market_type</code> 컬럼을 사용하세요. 종목코드의 앞자리 0이 보존되도록 텍스트로 처리합니다.</div><input type="file" id="csvFile" accept=".csv,text/csv" onchange="importCsv(event)"><p class="hint">UTF-8 CSV 권장. 동일 종목코드가 있으면 마스터의 종목명·시장구분을 갱신합니다.</p></div><div class="panel"><h2>종목 수동 등록</h2><form class="formgrid" onsubmit="saveMaster(event)"><div class="field"><label>종목코드</label><input id="mCode" required placeholder="005930"></div><div class="field"><label>종목명</label><input id="mName" required></div><div class="field"><label>시장구분</label><select id="mMarket"><option>KOSPI</option><option>KOSDAQ</option><option>KONEX</option><option>OTHER</option></select></div><div class="field" style="justify-content:end"><button class="btn primary">등록 / 갱신</button></div></form></div></div><div class="panel"><div class="panel-head"><h2>종목 마스터 목록</h2><input style="max-width:270px" id="masterSearch" placeholder="종목코드 또는 종목명 검색" oninput="renderMaster()"></div><div id="masterTable"></div></div></section>
+
+<section id="engine" class="section"><div class="panel"><div class="panel-head"><h2>회계 · 법인세 자동 계산 엔진</h2><button class="btn" onclick="exportEngineCsv()">계산 원장 CSV 내보내기</button></div><div class="notice">일반 내국법인 · 국내 상장 보통주 · K-IFRS 1109 · 한국 법인세법을 대상으로 하는 <b>검증용 자동 계산</b>입니다. 거래별 회계 장부금액, 세무상 원가, 평가손익, 처분손익, 자동 세무조정과 유보를 재계산합니다.</div><div class="formgrid"><div class="field"><label>계산 기준일</label><input type="date" id="engineDate" onchange="renderEngine()"></div><div class="field"><label>원가계산 방법을 설정할 주식(종목코드)</label><select id="policyStock" onchange="showStockPolicy()"></select></div><div class="field"><label>회계상 취득원가 배분방법 (종목별)</label><select id="accountingMethod" onchange="saveStockPolicy()"><option value="TOTAL">총평균법 (기본)</option><option value="MOVING">이동평균법</option><option value="FIFO">선입선출법</option><option value="SPECIFIC">개별법 (취득 LOT 지정)</option></select></div><div class="field"><label>세법상 원가 계산방법 (법인 공통)</label><select id="engineMethod" disabled><option value="TOTAL">총평균법</option><option value="MOVING">이동평균법</option></select></div><div class="field full"><h3>법인별 세법상 평가방법 신고·변경 관리</h3><div class="notice">투자목적·매매목적 또는 FVOCI·FVTPL 분류만으로 세법상 원가계산 방법을 나누지 않습니다. 신고 사실이 불명확한 경우 계산은 검토용이며 신고 적합성을 확정하지 않습니다.</div></div><div class="field"><label>신고한 평가방법</label><select id="corpTaxMethod"><option value="TOTAL">총평균법</option><option value="MOVING">이동평균법</option></select></div><div class="field"><label>최초 신고 확인</label><select id="corpFiling"><option value="UNKNOWN">미확인</option><option value="FILED">신고 확인</option><option value="NOT_FILED">미신고 확인</option></select></div><div class="field"><label>적용 사업연도 (시작 연도)</label><input id="corpYear" type="number" min="1900" max="2200" placeholder="예: 2026" onchange="renderCorporateTaxPolicy()"></div><div class="field"><label>신고일</label><input id="corpFiledDate" type="date"></div><div class="field"><label>신고 접수번호</label><input id="corpReceipt" placeholder="접수번호"></div><div class="field"><label>평가방법 변경 여부</label><select id="corpChange"><option value="NO">변경 없음</option><option value="YES">변경신고 확인</option><option value="PENDING">변경신고 미확인 / 검토 중</option></select></div><div class="field"><label>변경 전 방법</label><select id="corpPrevious"><option value="">해당 없음 / 미확인</option><option value="TOTAL">총평균법</option><option value="MOVING">이동평균법</option></select></div><div class="field"><label>변경신고일</label><input id="corpChangeDate" type="date"></div><div class="field full"><label>증빙파일명 또는 보관 위치 (파일 자체 업로드 아님)</label><input id="corpEvidence" placeholder="예: 2026_유가증권평가방법변경신고.pdf"></div><div class="field"><label>정책 검토 상태</label><select id="corpReview"><option value="PENDING">검토 중</option><option value="CONFIRMED">증빙 검토 완료 (사용자 확인)</option></select></div><div class="field full"><button class="btn primary" type="button" onclick="saveCorporateTaxPolicy()">해당 사업연도부터 적용할 정책 저장</button><div id="corpPolicyStatus" class="notice"></div><h3>연도별 정책 이력</h3><div id="yearPolicyHistory"></div><p class="hint">적용 시작연도 이후 다음 변경연도 전까지 해당 방법을 사용합니다. 현재 엔진은 1월~12월 사업연도 가정이며, 신고기한·효력 자동 법률판정은 제공하지 않습니다.</p></div><div class="field full"><div class="notice" id="policyStatus">종목을 선택해 원가계산 정책을 확인하세요.</div></div></div><p class="hint">회계상 원가배분 방법은 종목별 시뮬레이션 정책으로 관리합니다. 세법상 방법은 법인별 신고 정책으로 관리하고 동일 종목의 원가를 종목별로 계산합니다. 투자목적·매매목적 또는 FVOCI·FVTPL이라는 이유만으로 세법상 원가계산 방법을 나누지 않습니다. 첫 거래 저장 후 정책은 잠겨 기존 거래와 향후 거래에 동일하게 유지됩니다. 초기 선택값만 총평균법입니다. 개별법은 매도 시 취득 LOT를 지정해야 합니다. 회계정책의 실제 적합성은 별도 검토가 필요합니다. 세법상은 총평균법 또는 이동평균법을 선택합니다. 총평균법을 모델 가정으로 적용하며, K-IFRS가 이를 유일한 기본방법으로 지정한 것은 아닙니다. 세법상 원가 계산방법은 별도로 선택합니다. 총평균법의 연중 매도원가는 사업연도 후속 매수를 포함하므로 연말 확정 전에는 잠정치입니다. 동일 일자의 입력 순서는 매수·매도 후 평가로 가정합니다. 배당 익금불산입은 별도 요건 확인 전까지 자동 적용하지 않습니다.</p><div id="engineSummary"></div><h3>자산별 계산 결과</h3><div id="enginePositions"></div><h3>회계·세무 원장 및 자동 조정</h3><div id="engineLedger"></div><h3>국내 수입배당금 익금불산입 시뮬레이터</h3><div class="notice">법인세법 제18조의2 기준의 조건부 계산입니다. 3개월 계속보유·배제 요건을 검토한 경우에만 계산하며, 차입금 이자 관련 차감액은 사용자가 산출하여 입력합니다. 자동 원장에 반영하지 않습니다.</div><div class="formgrid"><div class="field"><label>배당금액 (원)</label><input id="divGross" type="number" min="0" value="1000000" oninput="renderDividendCalc()"></div><div class="field"><label>피출자법인 출자비율 (%)</label><input id="divOwnership" type="number" min="0" max="100" value="5" step="any" oninput="renderDividendCalc()"></div><div class="field"><label>차입금 이자 등 법정 차감액 (원)</label><input id="divInterest" type="number" min="0" value="0" oninput="renderDividendCalc()"></div><div class="field"><label>법정 요건 검토 결과</label><select id="divEligible" onchange="renderDividendCalc()"><option value="no">미검토 · 계산 보류</option><option value="yes">3개월 보유·배제 요건 확인 완료</option><option value="exclude">적용 배제 대상</option></select></div></div><div id="divCalcResult" class="notice"></div><h3>규칙 및 미지원 범위</h3><div class="alert">지원: 매수·매도·배당, FVTPL/FVOCI 공정가치 평가, 회계 원가배분 4가지 선택 및 세법 총평균/이동평균 선택, 장부가/세무가 차이, FVTPL 평가손익 세무조정, 처분 시 세무상 손익과 회계상 손익 차이, 유보 변동 계산.<br>제한: 총평균법의 연중 잠정치 및 회계정책 검토, 손상·재분류·주식분할, 외화, 수수료·증권거래세, FVOCI 처분 시 OCI의 자본 내 대체, 이연법인세, 법인별 세법 예외, 배당 익금불산입의 3개월 보유·차입금 이자 차감·배제 요건, 신고서 생성. FVOCI 평가 관련 세무조정은 당기손익 조정과 구별하여 별도 차이로 표시합니다.</div></div></section>
+<section id="validation" class="section"><div class="panel"><h2>결산 자동 검증</h2><p class="hint">수량·평가 누락·장부금액 대사·유보 이월·신고 정책을 확인합니다. 검증 실행 결과는 SQLite에 이력으로 남습니다. 자동 검증은 법적 적합성 판단을 대신하지 않습니다.</p><div class="actions"><label>사업연도 <input id="validateYear" type="number" min="1900" max="2200" style="width:120px"></label><button class="btn primary" onclick="runValidation()">검증 실행 및 로그 저장</button><button class="btn" onclick="loadValidationHistory()">과거 검증 이력</button></div><div class="panel" style="margin:12px 0"><h3>유보 보조원장 · 사업연도 결산 확정</h3><p class="hint">유보는 승인된 검증표에서만 발생하며 승인 취소 시 역분개로 상쇄합니다. 자동 계산은 승인 없이 원장에 반영되지 않습니다. 원장 부호: 유보 + / △유보 −.</p><div class="formgrid"><p class="notice">수동 유보 입력은 비활성화되었습니다. 검증표 승인·취소에 의해서만 원장이 변동합니다.</p><button class="btn" onclick="refreshClosingUI()">유보 원장 및 이월 조회</button><div class="field"><label>결산 확정자</label><input id="closeReviewer" placeholder="검토자"></div><div class="field"><label>결산 검토 메모</label><input id="closeNote" placeholder="확정 근거"></div><div class="field full"><label><input id="closeWarn" type="checkbox"> 검증 경고 검토 후 승인 (오류는 승인 불가)</label></div><div class="field full"><button class="btn primary" onclick="closeYearUI()">해당 사업연도 결산 확정</button></div></div><div id="closingResult" class="notice">사업연도를 선택하고 유보 원장을 조회하세요.</div></div><div class="panel"><h3>세무조정 검증표 · 사람 승인</h3><p class="hint">자동 계산 결과는 초안입니다. 법령·소득처분·유보 환입은 검토자가 확인 후 승인합니다. 승인된 유보·△유보만 SQLite 유보원장에 반영됩니다. 원본 데이터 변경 시 이전 초안 승인 불가.</p><div class="actions"><button class="btn primary" onclick="generateWorkpapersUI()">검증표 자동 생성</button><button class="btn" onclick="loadWorkpapersUI()">검증표 조회</button></div><div id="workpaperList"></div><div id="workpaperDetail"></div></div><div id="validationSummary" class="notice">사업연도를 선택하고 검증을 실행하세요.</div><div id="validationResults"></div><h3>검토·처리 이력</h3><div id="validationReviews"></div><h3>검증 실행 이력</h3><div id="validationHistory"></div></div></section><section id="settings" class="section"><div class="panel"><h2>사업연도 설정</h2><p class="hint">결산월을 기준으로 사업연도 종료연도를 부여합니다. 예: 3월 결산이면 2026-04-01~2027-03-31은 2027 사업연도입니다.</p><div class="field"><label>결산월</label><select id="fiscalEndMonth"><option value="1">1월</option><option value="2">2월</option><option value="3">3월</option><option value="4">4월</option><option value="5">5월</option><option value="6">6월</option><option value="7">7월</option><option value="8">8월</option><option value="9">9월</option><option value="10">10월</option><option value="11">11월</option><option value="12">12월</option></select></div><button class="btn" onclick="saveFiscalMonth()">결산월 저장</button></div><div class="panel"><h2>데이터 및 운영 설정</h2><p class="hint">Python 로컬 서버의 SQLite 데이터베이스에 저장됩니다. 최초 실행 시 기존 브라우저 데이터가 있다면 가져올지 선택할 수 있습니다. 변경 전·후 값은 감사 로그에 기록됩니다. 서버 실행 중에 사용하세요.</p><div class="actions"><button class="btn" onclick="exportData()">전체 JSON 백업</button><button class="btn" onclick="exportCsv('trades')">거래 CSV</button><button class="btn" onclick="exportCsv('adjustments')">세무조정 CSV</button><button class="btn danger" onclick="resetData()">전체 데이터 초기화</button></div><div class="separator"></div><h3>SQLite 저장 및 감사 로그</h3><p id="dbStatus" class="hint">서버 연결 확인 중…</p><button class="btn" onclick="refreshAudit()">최근 변경 로그 보기</button><div id="auditHistory"></div><div class="separator"></div><h3>구현 상태</h3><div class="notice">작동: 종목 등록·CSV 가져오기, 자산 자동 생성, 거래·배당 기록, 보유수량 검증, 평가 기록, 세무조정 다중 행, 유보 연결·누계, 세법상 장부금액 수동 기록, 조회·백업.</div><div class="alert">추가 검증 필요: 취득원가 배분법, 평가·처분 회계 분개, FVOCI 누적 OCI 정확한 처리, 세무조정 자동 계산, 거래·평가 시점별 원장 재계산, 실제 세법 적용.</div></div></section>
+</main></div><div id="toast" class="toast"></div><script>
+const KEY='investment_tax_workspace_v1';const initial=()=>({master:[],assets:[],trades:[],valuations:[],adjustments:[],taxBasis:{},stockPolicies:{},taxPolicyYears:[],fiscalEndMonth:12,taxPolicy:{method:"TOTAL",filingStatus:"UNKNOWN",effectiveYear:"",filingDate:"",receipt:"",changeStatus:"NO",previousMethod:"",changeDate:"",evidence:""},ids:{asset:0,trade:0,valuation:0,adjustment:0}});let db;try{db=JSON.parse(localStorage.getItem(KEY))||initial()}catch{db=initial()}const pages=[['dashboard','대시보드'],['assets','투자자산'],['trades','매수 · 매도 · 배당'],['valuations','공정가치 평가'],['adjustments','세무조정 · 유보'],['reports','장부금액 비교'],['master','종목 마스터'],['engine','자동 계산 엔진'],['validation','자동 검증'],['settings','데이터 관리']];let activeTrade='BUY';const $=id=>document.getElementById(id),won=n=>n==null?'—':Number(n).toLocaleString('ko-KR',{maximumFractionDigits:2})+'원',num=n=>Number(n)||0,esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),today=()=>new Date().toLocaleDateString('sv-SE');function persist(){renderAll();queueDbSave()}function notify(s){$('toast').textContent=s;$('toast').style.display='block';setTimeout(()=>$('toast').style.display='none',2600)}function go(id){document.querySelectorAll('.section').forEach(e=>e.classList.toggle('active',e.id===id));document.querySelectorAll('.nav').forEach(e=>e.classList.toggle('active',e.dataset.page===id));$('pageTitle').textContent=pages.find(p=>p[0]===id)[1];renderAll()}$('nav').innerHTML=pages.map(([id,n])=>`<button class="nav ${id==='dashboard'?'active':''}" data-page="${id}" onclick="go('${id}')">${esc(n)}</button>`).join('');for(const id of ['tDate','vDate','aDate'])$(id).value=today();function assetLabel(a){return `${a.stock_code} · ${a.asset_name} (${a.classification}) · #${a.id}`}function getAsset(id){return db.assets.find(a=>a.id===Number(id))}function holdings(id,date){return db.trades.filter(t=>t.assetId===Number(id)&&(!date||t.date<=date)).reduce((n,t)=>n+(t.type==='BUY'?t.qty:t.type==='SELL'?-t.qty:0),0)}function totalReserve(id){return db.adjustments.filter(a=>a.assetId===id).reduce((n,a)=>n+num(a.reserve),0)}function latestValuation(id){return db.valuations.filter(v=>v.assetId===id).sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id)[0]}function estimatedCarrying(id){let trades=db.trades.filter(t=>t.assetId===id).sort((a,b)=>a.date.localeCompare(b.date)||a.id-b.id),vals=db.valuations.filter(v=>v.assetId===id).sort((a,b)=>a.date.localeCompare(b.date)||a.id-b.id),events=[...trades.map(t=>({...t,kind:'t'})),...vals.map(v=>({...v,kind:'v'}))].sort((a,b)=>a.date.localeCompare(b.date)||((a.kind==='t'?0:1)-(b.kind==='t'?0:1))||a.id-b.id);let value=0;for(const e of events){if(e.kind==='v')value=e.fairValue;else if(e.type==='BUY')value+=e.amount;else if(e.type==='SELL')value-=num(e.cost)}return value}function table(headers,rows){return rows.length?`<div class="table-wrap"><table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`:'<div class="empty">아직 등록된 데이터가 없습니다.</div>'}function renderAll(){const options=db.assets.map(a=>`<option value="${a.id}">${esc(assetLabel(a))}</option>`).join('');for(const id of ['vAsset','aAsset','bAsset']){const sel=$(id),old=sel.value;sel.innerHTML=options;if(db.assets.some(a=>String(a.id)===old))sel.value=old}renderDashboard();renderAssets();renderTrades();renderValuations();renderAdjustments();renderReports();renderMaster();updateStockHint();fillSources(false);updateValuationPreview()}
+function renderDashboard(){const held=db.assets.filter(a=>holdings(a.id)>0);const reserves=db.adjustments.reduce((n,a)=>n+num(a.reserve),0);$('metrics').innerHTML=[['등록 투자자산',db.assets.length,'회계 분류별 관리'],['현재 보유 자산',held.length,'잔여수량 기준'],['누적 거래',db.trades.length,'매수 · 매도 · 배당'],['유보 증감 순액',won(reserves),'입력된 유보 변동 합계']].map(([k,v,s])=>`<div class="card metric"><div class="k">${k}</div><div class="v">${v}</div><div class="sub">${s}</div></div>`).join('');$('dashboardHoldings').innerHTML=table(['종목코드','종목명','분류','보유수량','회계 장부금액(추정)','유보 잔액'],held.map(a=>[esc(a.stock_code),esc(a.asset_name),`<span class="tag ${a.classification==='FVOCI'?'oci':''}">${a.classification}</span>`,won(holdings(a.id)).replace('원','주'),won(estimatedCarrying(a.id)),won(totalReserve(a.id))]));$('recentTrades').innerHTML=table(['일자','자산','구분','금액'],db.trades.slice(-5).reverse().map(t=>[esc(t.date),esc(getAsset(t.assetId)?.asset_name),esc(t.type),won(t.amount)]));$('recentAdjustments').innerHTML=table(['일자','유형','조정금액','유보 증감'],db.adjustments.slice(-5).reverse().map(a=>[esc(a.date),esc(a.type),won(a.amount),won(a.reserve)]))}function renderAssets(){$('assetsTable').innerHTML=table(['자산 ID','종목코드','종목명','시장','회계 분류','보유수량','유보 잔액'],db.assets.map(a=>[String(a.id).padStart(5,'0'),esc(a.stock_code),esc(a.asset_name),esc(a.market),`<span class="tag ${a.classification==='FVOCI'?'oci':''}">${a.classification}</span>`,String(holdings(a.id))+'주',won(totalReserve(a.id))]))}
+function tradeType(type){activeTrade=type;document.querySelectorAll('[data-trade]').forEach(b=>b.classList.toggle('active',b.dataset.trade===type));$('classField').style.display=type==='BUY'?'flex':'none';$('assetField').style.display=type==='BUY'?'none':'flex';$('qtyField').style.display=type==='DIVIDEND'?'none':'flex';$('priceField').style.display=type==='DIVIDEND'?'none':'flex';$('amountField').style.display=type==='DIVIDEND'?'flex':'none';$('costField').style.display=type==='SELL'?'flex':'none';$('tradeHelp').textContent=type==='BUY'?'동일 종목·동일 회계 분류는 기존 투자자산에 연결합니다.':type==='SELL'?'보유수량 초과 매도는 차단됩니다. 매도분 취득원가를 직접 입력해야 합니다.':'배당은 해당 투자자산에 연결되며 수량과 주당가격은 입력하지 않습니다.';updateStockHint()}function updateStockHint(){const code=$('tStock').value.trim();const m=db.master.find(x=>x.code===code);$('stockHint').textContent=m?`${m.name} · ${m.market}`:'종목 마스터에 등록된 코드를 입력하세요.';const assets=db.assets.filter(a=>a.stock_code===code);const old=$('tAsset').value;$('tAsset').innerHTML=assets.map(a=>`<option value="${a.id}">${esc(a.classification)} · #${a.id} · 잔여 ${holdings(a.id)}주</option>`).join('');if(assets.some(a=>String(a.id)===old))$('tAsset').value=old;$('tradeAssetPreview').innerHTML=assets.length?table(['분류','자산 ID','보유수량'],assets.map(a=>[a.classification,a.id,holdings(a.id)+'주'])):'보유 자산이 없습니다.'}function saveTrade(e){e.preventDefault();const date=$('tDate').value,code=$('tStock').value.trim(),m=db.master.find(x=>x.code===code);if(!m)return notify('종목 마스터에 없는 코드입니다.');let a;if(activeTrade==='BUY'){const classification=$('tClass').value;a=db.assets.find(x=>x.stock_code===code&&x.classification===classification)}else{a=getAsset($('tAsset').value);if(!a||a.stock_code!==code)return notify('처리할 보유 자산을 선택하세요.')}const qty=activeTrade==='DIVIDEND'?null:Number($('tQty').value),price=activeTrade==='DIVIDEND'?null:Number($('tPrice').value),amount=activeTrade==='DIVIDEND'?Number($('tAmount').value):qty*price,cost=activeTrade==='SELL'?Number($('tCost').value):null;if(activeTrade!=='DIVIDEND'&&(!Number.isInteger(qty)||qty<=0||!Number.isFinite(price)||price<0))return notify('수량과 단가를 확인하세요.');if(!Number.isFinite(amount)||amount<0)return notify('거래금액을 확인하세요.');if(activeTrade==='SELL'&&(!Number.isFinite(cost)||cost<0||$('tCost').value===''))return notify('매도분 취득원가를 입력하세요.');if(activeTrade==='SELL'&&qty>holdings(a.id,date))return notify('거래일 기준 보유수량보다 많이 매도할 수 없습니다.');if(activeTrade==='DIVIDEND'&&holdings(a.id,date)<=0)return notify('배당 대상일에 보유수량이 없습니다.');if(!a){a={id:++db.ids.asset,stock_code:code,asset_name:m.name,market:m.market,classification:$('tClass').value};db.assets.push(a)}db.trades.push({id:++db.ids.trade,assetId:a.id,date,type:activeTrade,qty,price,amount,cost,note:$('tNote').value.trim()});persist();$('tQty').value='';$('tPrice').value='';$('tAmount').value='';$('tCost').value='';$('tNote').value='';notify('거래를 저장했습니다.')}function renderTrades(){$('tradeHistory').innerHTML=table(['거래 ID','일자','자산','유형','수량','주당가','금액','매도 원가'],db.trades.slice().reverse().slice(0,15).map(t=>[String(t.id).padStart(5,'0'),esc(t.date),esc(getAsset(t.assetId)?.asset_name),esc(t.type),t.qty??'—',won(t.price),won(t.amount),won(t.cost)]))}
+function updateValuationPreview(){const a=getAsset($('vAsset').value);if(!a){$('valuationPreview').textContent='평가할 자산을 먼저 등록하세요.';return}const qty=holdings(a.id,$('vDate').value),fair=qty*num($('vPrice').value),gain=fair-num($('vBefore').value);$('valuationPreview').innerHTML=`보유수량: <b>${qty}주</b><br>평가금액: <b>${won(fair)}</b><br>평가손익: <b>${won(gain)}</b><br>분류: <b>${a.classification}</b>`}['vAsset','vDate','vPrice','vBefore'].forEach(id=>$(id).addEventListener('input',updateValuationPreview));function saveValuation(e){e.preventDefault();const a=getAsset($('vAsset').value),date=$('vDate').value;if(!a)return notify('투자자산을 선택하세요.');const qty=holdings(a.id,date);if(qty<=0)return notify('평가일에 보유수량이 없습니다.');const price=Number($('vPrice').value),before=Number($('vBefore').value),fairValue=qty*price;db.valuations.push({id:++db.ids.valuation,assetId:a.id,date,qty,price,before,fairValue,gain:fairValue-before,note:$('vNote').value.trim()});persist();notify('공정가치 평가를 기록했습니다.')}function renderValuations(){$('valuationHistory').innerHTML=table(['평가 ID','일자','자산','분류','수량','주당 공정가치','평가금액','평가손익'],db.valuations.slice().reverse().map(v=>{const a=getAsset(v.assetId);return[v.id,esc(v.date),esc(a?.asset_name),esc(a?.classification),v.qty,won(v.price),won(v.fairValue),won(v.gain)]}))}
+function fillSources(preserve=true){const aId=Number($('aAsset').value),type=$('aSourceType').value,old=preserve?$('aSource').value:'';let items=type==='TRADE'?db.trades.filter(t=>t.assetId===aId).map(t=>({id:t.id,label:`거래 #${t.id} · ${t.date} · ${t.type}`})):type==='VALUATION'?db.valuations.filter(v=>v.assetId===aId).map(v=>({id:v.id,label:`평가 #${v.id} · ${v.date}`})):[];$('aSource').innerHTML='<option value="">선택 안 함</option>'+items.map(x=>`<option value="${x.id}">${esc(x.label)}</option>`).join('');if(items.some(x=>String(x.id)===old))$('aSource').value=old;const oldParent=$('aParent').value;$('aParent').innerHTML='<option value="">연결 안 함</option>'+db.adjustments.filter(x=>x.assetId===aId).map(x=>`<option value="${x.id}">조정 #${x.id} · ${esc(x.type)} · ${won(x.reserve)}</option>`).join('');if(db.adjustments.some(x=>String(x.id)===oldParent))$('aParent').value=oldParent} $('aAsset').addEventListener('change',()=>fillSources());function saveAdjustment(e){e.preventDefault();const a=getAsset($('aAsset').value);if(!a)return notify('자산을 선택하세요.');const amount=Number($('aAmount').value),reserve=Number($('aReserve').value),parent=$('aParent').value?Number($('aParent').value):null,sourceType=$('aSourceType').value,sourceId=$('aSource').value?Number($('aSource').value):null;if(!(amount>0)||!Number.isFinite(reserve))return notify('조정금액을 확인하세요.');if(parent&&!db.adjustments.some(x=>x.id===parent&&x.assetId===a.id))return notify('연결할 기존 조정이 없습니다.');const linked=db.adjustments.filter(x=>x.assetId===a.id&&x.parentId===parent);const sequence=$('aSequence').value?Number($('aSequence').value):linked.length+1;db.adjustments.push({id:++db.ids.adjustment,assetId:a.id,date:$('aDate').value,sourceType,sourceId,type:$('aType').value,direction:$('aDirection').value,amount,reserve,parentId:parent,sequence,note:$('aNote').value.trim()});persist();$('aAmount').value='';$('aReserve').value='0';$('aNote').value='';notify('세무조정을 저장했습니다.')}function renderAdjustments(){$('reservePreview').innerHTML=table(['투자자산','유보 증감 순액'],db.assets.filter(a=>db.adjustments.some(x=>x.assetId===a.id)).map(a=>[esc(assetLabel(a)),won(totalReserve(a.id))]));$('adjustmentHistory').innerHTML=table(['조정 ID','일자','투자자산','유형','세무 구분','조정금액','유보 증감','연결 조정','순서'],db.adjustments.slice().reverse().map(a=>[a.id,esc(a.date),esc(getAsset(a.assetId)?.asset_name),esc(a.type),esc(a.direction),won(a.amount),won(a.reserve),a.parentId?'#'+a.parentId:'—',a.sequence]))}
+function saveTaxBasis(e){e.preventDefault();const id=Number($('bAsset').value);if(!getAsset(id))return notify('자산을 선택하세요.');db.taxBasis[id]={amount:Number($('bAmount').value),note:$('bNote').value.trim(),updated:today()};persist();notify('세법상 장부금액을 저장했습니다.')}function renderReports(){$('reportTable').innerHTML=table(['자산 ID','종목','분류','수량','회계 장부금액(추정)','세법상 장부금액(입력)','차이','유보 잔액','FVOCI 평가손익 누계(참고)'],db.assets.map(a=>{const book=estimatedCarrying(a.id),basis=db.taxBasis[a.id]?.amount,oci=db.valuations.filter(v=>v.assetId===a.id).reduce((n,v)=>n+v.gain,0);return[a.id,esc(a.asset_name),esc(a.classification),holdings(a.id)+'주',won(book),won(basis),basis==null?'미입력':won(book-basis),won(totalReserve(a.id)),a.classification==='FVOCI'?won(oci):'—']}))}function saveMaster(e){e.preventDefault();const code=$('mCode').value.trim(),name=$('mName').value.trim(),market=$('mMarket').value;if(!code||!name)return notify('종목코드와 종목명을 입력하세요.');const old=db.master.find(x=>x.code===code);if(old){old.name=name;old.market=market}else db.master.push({code,name,market});persist();$('mCode').value='';$('mName').value='';notify('종목 마스터를 저장했습니다.')}function parseCsv(s){s=s.replace(/^\uFEFF/,'');const rows=[];let row=[],cell='',quoted=false;for(let i=0;i<s.length;i++){const c=s[i];if(c==='"'){if(quoted&&s[i+1]==='"'){cell+='"';i++}else quoted=!quoted}else if(c===','&&!quoted){row.push(cell);cell=''}else if((c==='\n'||c==='\r')&&!quoted){if(c==='\r'&&s[i+1]==='\n')i++;row.push(cell);if(row.some(x=>x.trim()))rows.push(row);row=[];cell=''}else cell+=c}row.push(cell);if(row.some(x=>x.trim()))rows.push(row);return rows}async function importCsv(e){const file=e.target.files[0];if(!file)return;try{const rows=parseCsv(await file.text()),head=rows.shift().map(x=>x.trim().toLowerCase());const cols=['stock_code','asset_name','market_type'].map(k=>head.indexOf(k));if(cols.includes(-1))throw Error('필수 컬럼이 없습니다: stock_code, asset_name, market_type');let count=0;for(const r of rows){const[code,name,market]=cols.map(i=>(r[i]||'').trim());if(!code||!name)continue;const old=db.master.find(x=>x.code===code);if(old){old.name=name;old.market=market}else db.master.push({code,name,market});count++}persist();notify(`${count}개 종목을 반영했습니다.`)}catch(err){notify('CSV 오류: '+err.message)}e.target.value=''}function renderMaster(){const q=$('masterSearch').value.trim().toLowerCase();const data=db.master.filter(x=>x.code.toLowerCase().includes(q)||x.name.toLowerCase().includes(q));$('masterTable').innerHTML=`<p class="hint">총 ${db.master.length}개 종목 · 검색 결과 ${data.length}개</p>`+table(['종목코드','종목명','시장구분'],data.slice(0,300).map(m=>[esc(m.code),esc(m.name),esc(m.market)]))+(data.length>300?'<p class="hint">최초 300개만 표시합니다. 검색어로 좁혀주세요.</p>':'')}
+function download(name,text,mime){const blob=new Blob([text],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url)}function exportData(){download('investment-tax-backup.json',JSON.stringify(db,null,2),'application/json')}async function importData(e){const f=e.target.files[0];if(!f)return;try{const d=JSON.parse(await f.text());for(const k of ['master','assets','trades','valuations','adjustments'])if(!Array.isArray(d[k]))throw Error('올바른 백업 파일이 아닙니다.');if(!confirm('현재 데이터를 백업 파일로 교체할까요?'))return;db={...initial(),...d};db.stockPolicies??={};db.taxPolicy??=initial().taxPolicy;db.taxPolicyYears??=[];persist();notify('백업을 복원했습니다.')}catch(err){notify('불러오기 실패: '+err.message)}e.target.value=''}function exportCsv(which){let arr=which==='trades'?db.trades:which==='adjustments'?db.adjustments:db.assets.map(a=>({asset_id:a.id,stock_code:a.stock_code,classification:a.classification,quantity:holdings(a.id),estimated_book:estimatedCarrying(a.id),tax_basis:db.taxBasis[a.id]?.amount??'',reserve:totalReserve(a.id)}));if(!arr.length)return notify('내보낼 데이터가 없습니다.');const keys=[...new Set(arr.flatMap(x=>Object.keys(x)))];const csv=[keys.join(','),...arr.map(x=>keys.map(k=>'"'+String(x[k]??'').replaceAll('"','""')+'"').join(','))].join('\r\n');download(which+'.csv','\uFEFF'+csv,'text/csv;charset=utf-8')}function resetData(){if(!confirm('모든 로컬 데이터를 삭제할까요? 되돌릴 수 없습니다.'))return;db=initial();persist();notify('데이터를 초기화했습니다.')}tradeType('BUY');renderAll();
+let dbRevision=0, dbSaveQueue=Promise.resolve(), dbReady=false, dbSaveFailed=false;
+const dbCover=document.createElement('div');
+dbCover.id='dbCover';
+dbCover.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(20,25,35,.9);color:white;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-size:18px';
+dbCover.textContent='SQLite 데이터베이스 연결 중…';
+document.body.appendChild(dbCover);
+function dbStatus(message){const el=$('dbStatus');if(el)el.textContent=message;}
+async function dbRequest(path, options){
+ const r=await fetch(path,options);const d=await r.json();
+ if(!r.ok)throw Error(d.error||'서버 요청 실패');
+ return d;
+}
+function queueDbSave(){
+ if(!dbReady)return;
+ const snapshot=JSON.parse(JSON.stringify(db));
+ dbSaveQueue=dbSaveQueue.then(async()=>{
+  const result=await dbRequest('/api/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({state:snapshot,expected_revision:dbRevision})});
+  dbRevision=result.revision;dbSaveFailed=false;dbStatus('SQLite 저장 완료 · 버전 '+dbRevision);
+ }).catch(err=>{
+  dbSaveFailed=true;dbStatus('저장 실패: '+err.message);
+  notify('SQLite 저장 실패. 페이지를 닫지 말고 데이터를 JSON으로 백업하세요.');
+  // Do not attempt a subsequent save after a conflict: it could overwrite someone else's work.
+  dbReady=false;
+ });
+}
+async function initDatabase(){
+ try{
+  const result=await dbRequest('/api/state');
+  dbRevision=result.revision;
+  if(result.state){
+   db={...initial(),...result.state};
+  }else{
+   const old=localStorage.getItem(KEY);
+   if(old && confirm('기존 브라우저 데이터를 SQLite로 가져올까요? 취소하면 빈 데이터베이스로 시작합니다.')){
+    const imported=JSON.parse(old);
+    for(const k of ['master','assets','trades','valuations','adjustments'])if(!Array.isArray(imported[k]))throw Error('기존 데이터 형식 오류: '+k);
+    db={...initial(),...imported};
+   }else db=initial();
+  }
+  dbReady=true;renderAll();
+  if(!result.state)queueDbSave();
+  dbStatus('SQLite 연결됨 · 버전 '+dbRevision);if($('validateYear'))$('validateYear').value=fiscalYear(today());
+  dbCover.remove();
+ }catch(err){
+  dbStatus('SQLite 연결 실패: '+err.message);
+  dbCover.textContent='데이터베이스 연결 실패. python3 server.py 로 실행한 뒤 새로고침하세요. '+err.message;
+ }
+}
+async function refreshAudit(){
+ try{
+  await dbSaveQueue;
+  const result=await dbRequest('/api/audit');
+  $('auditHistory').innerHTML=table(['시각(UTC)','버전','대상','키','작업','변경 전','변경 후'],result.events.map(e=>[
+   esc(e.recorded_at),e.revision,esc(e.entity),esc(e.entity_key),esc(e.action),
+   `<details><summary>보기</summary><pre style="white-space:pre-wrap;max-width:250px">${esc(e.before_json||'—')}</pre></details>`,
+   `<details><summary>보기</summary><pre style="white-space:pre-wrap;max-width:250px">${esc(e.after_json||'—')}</pre></details>`
+  ]));
+ }catch(err){notify('감사 로그 조회 실패: '+err.message)}
+}
+window.addEventListener('beforeunload',e=>{
+ if(dbReady && dbSaveQueue && dbSaveFailed){e.preventDefault();e.returnValue='';}
+});
+
+let lastValidationRun=null;
+async function runValidation(){
+ if(!dbReady)return notify('SQLite 연결 상태를 확인하세요.');
+ try{
+  await dbSaveQueue;
+  const year=Number($('validateYear').value);
+  if(!Number.isInteger(year)||year<1900||year>2200)throw Error('사업연도를 확인하세요.');
+  const end=fiscalEndDate(year);
+  const result=calculation(end);
+  const priorYear=year-1;
+  // The previous closing position is a comparison reference, not a separately approved opening ledger.
+  const positions=result.positions.map(p=>({assetId:p.asset.id,qty:p.qty,book:p.book,tax:p.tax,reserve:p.reserve}));
+  const out=await dbRequest('/api/validate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({year,expected_revision:dbRevision,calculated:{positions}})});
+  lastValidationRun=out.run_id;
+  const sums=out.summary;
+  $('validationSummary').textContent=`검증 #${out.run_id} · ${out.year}사업연도 · 오류 ${sums.ERROR}건 / 경고 ${sums.WARNING}건 · 원본 거래는 변경하지 않았습니다.`;
+  $('validationResults').innerHTML=table(['등급','검증코드','내용','대상','기대값','실제값','검토'],out.issues.map(x=>[esc(x.severity),esc(x.code),`<b>${esc(x.title)}</b><br>${esc(x.detail)}`,esc(x.ref),esc(x.expected||'—'),esc(x.actual||'—'),`<button class="btn" onclick="reviewIssue('${encodeURIComponent(x.code+'|'+(x.ref||''))}')">처리 기록</button>`]));
+  await loadIssueReviews();
+  await loadValidationHistory();
+ }catch(err){$('validationSummary').textContent='검증 실패: '+err.message;}
+}
+async function reviewIssue(encoded){
+ if(!lastValidationRun)return notify('먼저 검증을 실행하세요.');
+ const issue_key=decodeURIComponent(encoded);
+ const status=prompt('상태 입력: OPEN / REVIEWING / RESOLVED / ACCEPTED','REVIEWING');
+ if(status===null)return;
+ const reason=prompt('검토 근거 또는 수정 내역을 기록하세요 (필수)');
+ if(reason===null)return;
+ try{await dbRequest('/api/validation/review',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({issue_key,status,reason,run_id:lastValidationRun})});await loadIssueReviews();notify('검토 이력을 저장했습니다. 해결 여부는 재검증으로 확인하세요.');}
+ catch(err){notify('검토 기록 실패: '+err.message)}
+}
+async function loadIssueReviews(){
+ const data=await dbRequest('/api/validation/reviews');
+ $('validationReviews').innerHTML=table(['시각(UTC)','대상','상태','사유','검증 실행'],data.events.map(e=>[esc(e.recorded_at),esc(e.issue_key),esc(e.status),esc(e.reason),e.source_run]));
+}
+async function loadValidationHistory(){
+ try{
+  const data=await dbRequest('/api/validation/history');
+  await loadIssueReviews();
+  $('validationHistory').innerHTML=table(['실행 ID','실행 시각(UTC)','사업연도','데이터 버전','오류','경고'],data.runs.map(r=>{const v=JSON.parse(r.result_json);return[r.id,esc(r.recorded_at),r.fiscal_year,r.source_revision,v.summary.ERROR,v.summary.WARNING]}));
+ }catch(err){notify('검증 이력 조회 실패: '+err.message)}
+}
+
+initDatabase();
+
+</script><script>
+/* K-IFRS / Korean corporation-tax illustrative calculation engine, 2026 baseline. */
+const originalSaveTrade=saveTrade,originalSaveValuation=saveValuation,originalRenderAll=renderAll;
+const roundW=n=>Math.round((n+Number.EPSILON)*100)/100;
+const BOOK_METHODS=['TOTAL','MOVING','FIFO','SPECIFIC'];
+const TAX_METHODS=['TOTAL','MOVING'];
+function stockPolicy(code){
+ const x=(db.stockPolicies||{})[code]||{};
+ return {book:BOOK_METHODS.includes(x.book)?x.book:'TOTAL',tax:TAX_METHODS.includes(x.tax)?x.tax:'TOTAL'};
+}
+function selectedAccountingMethod(code){return stockPolicy(code).book}
+function corporateTaxPolicy(){return {...initial().taxPolicy,...(db.taxPolicy||{})}}
+function taxPolicyForYear(year){
+ const y=Number(year);const rows=(db.taxPolicyYears||[]).filter(p=>Number(p.effectiveYear)<=y).sort((a,b)=>Number(b.effectiveYear)-Number(a.effectiveYear));
+ if(rows.length){const p=rows[0];return {...p,method:p.filingStatus==='NOT_FILED'?'TOTAL':p.method,verified:p.filingStatus!=='UNKNOWN'&&p.changeStatus!=='PENDING'&&p.reviewStatus==='CONFIRMED'};}
+ const p=corporateTaxPolicy();return {...p,method:p.filingStatus==='NOT_FILED'?'TOTAL':p.method,verified:false,legacy:true};
+}
+function selectedTaxMethod(code,year){const p=taxPolicyForYear(year||new Date().getFullYear());return TAX_METHODS.includes(p.method)?p.method:'TOTAL'}
+function renderCorporateTaxPolicy(){
+ const year=Number($('corpYear')?.value)||Number(corporateTaxPolicy().effectiveYear)||new Date().getFullYear();const p=(db.taxPolicyYears||[]).find(x=>Number(x.effectiveYear)===year)||{...corporateTaxPolicy(),effectiveYear:String(year),reviewStatus:'PENDING'};const ids={corpTaxMethod:p.method,corpFiling:p.filingStatus,corpYear:p.effectiveYear,corpFiledDate:p.filingDate,corpReceipt:p.receipt,corpChange:p.changeStatus,corpPrevious:p.previousMethod,corpChangeDate:p.changeDate,corpEvidence:p.evidence,corpReview:p.reviewStatus||'PENDING'};
+ for(const [id,val] of Object.entries(ids))if($(id))$(id).value=val||'';
+ const legacy=Object.values(db.stockPolicies||{}).some(x=>x.tax==='MOVING');
+ $('corpPolicyStatus').textContent=(p.filingStatus==='UNKNOWN'?'신고 이력 미확인: 계산 결과는 검토용입니다. ':p.filingStatus==='NOT_FILED'?'미신고: 총평균법으로 계산합니다. ':'신고 확인 기록이 있습니다. ')+(p.changeStatus==='PENDING'?'변경신고 미확인: 적용방법 확정 전 증빙 검토 필요. ':'')+(legacy?'기존 종목별 세법 설정이 발견됐습니다. 현재 계산은 법인별 정책을 우선 적용합니다. ':'')+'신고기한·변경 효력은 증빙 및 법령 확인이 필요합니다.';renderYearPolicyHistory();
+}
+function renderYearPolicyHistory(){
+ const el=$('yearPolicyHistory');if(!el)return;
+ const rows=[...(db.taxPolicyYears||[])].sort((a,b)=>Number(a.effectiveYear)-Number(b.effectiveYear));
+ el.innerHTML=rows.length?table(['적용 시작연도','방법','신고','변경','검토','관리'],rows.map(p=>[esc(p.effectiveYear),p.method==='TOTAL'?'총평균':'이동평균',esc(p.filingStatus),esc(p.changeStatus),esc(p.reviewStatus||'PENDING'),`<button class="btn" type="button" onclick="loadYearPolicy(${Number(p.effectiveYear)})">불러오기</button>`])):'<div class="hint">사업연도별 등록된 정책이 없습니다. 기존 단일 정책은 미확인 기본값으로만 사용됩니다.</div>';
+}
+function loadYearPolicy(year){$('corpYear').value=year;renderCorporateTaxPolicy();}
+function saveCorporateTaxPolicy(){
+ const next={method:$('corpTaxMethod').value,filingStatus:$('corpFiling').value,effectiveYear:$('corpYear').value,filingDate:$('corpFiledDate').value,receipt:$('corpReceipt').value.trim(),changeStatus:$('corpChange').value,previousMethod:$('corpPrevious').value,changeDate:$('corpChangeDate').value,evidence:$('corpEvidence').value.trim(),reviewStatus:$('corpReview').value};
+ const year=Number(next.effectiveYear);
+ if(!Number.isInteger(year)||year<1900||year>2200)return notify('적용 시작 사업연도를 입력하세요.');
+ if(next.filingStatus==='FILED'&&!next.filingDate)return notify('신고 확인 시 신고일을 입력하세요.');
+ if(next.changeStatus==='YES'&&(!next.changeDate||!next.previousMethod||!next.receipt))return notify('변경 전 방법, 변경신고일, 접수번호를 입력하세요.');
+ if(next.filingStatus==='NOT_FILED'&&next.method!=='TOTAL')return notify('미신고로 확인된 경우 총평균법을 선택하세요.');
+ const prev=[...(db.taxPolicyYears||[])].filter(x=>Number(x.effectiveYear)<year).sort((a,b)=>Number(b.effectiveYear)-Number(a.effectiveYear))[0];
+ if(prev&&prev.method!==next.method&&next.changeStatus!=='YES')return notify('이전 정책과 방법이 다릅니다. 변경신고 확인을 선택해야 합니다.');
+ if(prev&&prev.method!==next.method&&next.previousMethod!==prev.method)return notify('변경 전 방법이 직전 적용 정책과 일치하지 않습니다.');
+ if(next.reviewStatus==='CONFIRMED'&&(next.filingStatus==='UNKNOWN'||next.changeStatus==='PENDING'))return notify('신고/변경 상태 미확인 정책은 확정할 수 없습니다.');
+ // Avoid rewriting an earlier policy silently: require explicit confirmation.
+ const old=(db.taxPolicyYears||[]).find(x=>Number(x.effectiveYear)===year);
+ if(old&&JSON.stringify(old)!==JSON.stringify(next)&&!confirm(`${year}년 정책을 변경하면 해당 연도 이후 계산 결과가 달라질 수 있습니다. 변경할까요?`))return;
+ db.taxPolicyYears=[...(db.taxPolicyYears||[]).filter(x=>Number(x.effectiveYear)!==year),next].sort((a,b)=>Number(a.effectiveYear)-Number(b.effectiveYear));
+ db.taxPolicy=next;persist();renderCorporateTaxPolicy();renderEngine();notify(`${year}년부터 적용하는 정책을 저장했습니다. 신고 효력은 별도 검토가 필요합니다.`);
+}
+function renderPolicyStocks(){
+ const el=$('policyStock');if(!el)return;
+ const old=el.value;
+ const codes=[...new Set([...db.master.map(x=>x.code),...db.assets.map(x=>x.stock_code)])].sort();
+ el.innerHTML='<option value="">종목 선택</option>'+codes.map(code=>`<option value="${esc(code)}">${esc(code)} · ${esc(db.master.find(x=>x.code===code)?.name||db.assets.find(a=>a.stock_code===code)?.asset_name||'')}</option>`).join('');
+ if(codes.includes(old))el.value=old;
+ showStockPolicy();renderCorporateTaxPolicy();
+}
+function showStockPolicy(){
+ const code=$('policyStock')?.value||'';
+ const policy=stockPolicy(code),locked=db.trades.some(t=>db.assets.some(a=>a.id===t.assetId&&a.stock_code===code));
+ $('accountingMethod').value=policy.book;$('engineMethod').value=selectedTaxMethod(code,fiscalYear($('engineDate')?.value||today()));
+ $('accountingMethod').disabled=!code||locked;$('engineMethod').disabled=true;
+ $('policyStatus').textContent=!code?'종목을 선택하세요. 첫 거래 전에는 방법을 지정할 수 있습니다.':locked?`${code}: 거래가 존재하여 정책이 잠겼습니다. FVOCI와 FVTPL 모두 동일한 방법을 사용합니다.`:`${code}: 첫 거래 전입니다. 방법을 선택하면 해당 종목에 저장됩니다.`;
+ updateLotField();
+}
+function saveStockPolicy(){
+ const code=$('policyStock').value;
+ if(!code||db.trades.some(t=>db.assets.some(a=>a.id===t.assetId&&a.stock_code===code))){showStockPolicy();return notify('거래가 있는 종목은 원가계산 방법을 변경할 수 없습니다.')}
+ db.stockPolicies??={};db.stockPolicies[code]={book:$('accountingMethod').value};
+ persist();showStockPolicy();notify('종목별 회계 원가배분 정책을 저장했습니다.');
+}
+// Fiscal year is labelled by its ending calendar year.
+function fiscalYear(date){const m=Number(db.fiscalEndMonth||12);const [y,month]=date.slice(0,7).split('-').map(Number);return String(y+(month>m?1:0));}
+function fiscalEndDate(year){const m=Number(db.fiscalEndMonth||12);return `${year}-${String(m).padStart(2,'0')}-${String(new Date(Number(year),m,0).getDate()).padStart(2,'0')}`;}
+function saveFiscalMonth(){const m=Number($('fiscalEndMonth').value);if(!Number.isInteger(m)||m<1||m>12)return notify('결산월 오류');if(db.trades.length&&!confirm('결산월 변경은 모든 과거 원가계산과 사업연도 정책 적용에 영향을 줍니다. 계속할까요?'))return;db.fiscalEndMonth=m;persist();renderEngine();notify('결산월 저장 · 모든 사업연도 재계산');}
+function calculation(asOf='9999-12-31'){
+ const ledger=[],positions=[];
+ // Annual weighted-average pool: beginning-of-year tax/book cost + all purchases
+ // within that calendar year.  For the annual total average, future purchases
+ // change the year's earlier sale basis (provisional until year-end).
+ function annualPools(events,method){
+  const pools=new Map();let carryQ=0,carryCost=0;
+  const years=[...new Set(events.map(e=>fiscalYear(e.date)))].sort();
+  for(const year of years){
+   const yr=events.filter(e=>fiscalYear(e.date)===year);
+   const buys=yr.filter(e=>e.kind==='trade'&&e.type==='BUY');
+   const sells=yr.filter(e=>e.kind==='trade'&&e.type==='SELL');
+   const buyQ=buys.reduce((v,e)=>v+e.qty,0),buyCost=buys.reduce((v,e)=>v+e.amount,0);
+   const unit=(carryQ+buyQ)>0?(carryCost+buyCost)/(carryQ+buyQ):0;
+   const soldQ=sells.reduce((v,e)=>v+e.qty,0);
+   pools.set(year,{unit,openingQ:carryQ,openingCost:carryCost});
+   carryQ=carryQ+buyQ-soldQ;
+   carryCost=(carryQ>0?carryQ*unit:0);
+  }
+  return pools;
+ }
+ // Tax basis is pooled by stock code, independently of accounting classification.
+ // Same-date transactions use date and trade ID order; annual TOTAL uses all buys
+ // in the calendar year and the carried-forward tax basis from the prior year.
+ const pooledTaxCosts=new Map(), pooledTaxErrors=new Map();
+ const stockCodes=[...new Set(db.assets.map(a=>a.stock_code))];
+ for(const code of stockCodes){
+  const ids=new Set(db.assets.filter(a=>a.stock_code===code).map(a=>a.id));
+  const trades=db.trades.filter(t=>ids.has(t.assetId)&&['BUY','SELL'].includes(t.type)&&fiscalYear(t.date)<=fiscalYear(asOf))
+   .sort((x,y)=>x.date.localeCompare(y.date)||x.id-y.id);
+  let openingQty=0,openingCost=0;
+  for(const year of [...new Set(trades.map(t=>fiscalYear(t.date)))].sort()){
+   const yr=trades.filter(t=>fiscalYear(t.date)===year);
+   const method=selectedTaxMethod(code,year);
+   if(method==='TOTAL'){
+    const buys=yr.filter(t=>t.type==='BUY');
+    const totalQty=openingQty+buys.reduce((n,t)=>n+t.qty,0);
+    const totalCost=openingCost+buys.reduce((n,t)=>n+t.amount,0);
+    const unit=totalQty>0?totalCost/totalQty:0;
+    let available=openingQty;
+    for(const t of yr){
+     if(t.type==='BUY')available+=t.qty;
+     else if(t.qty>available+1e-9){pooledTaxErrors.set(t.id,'동일 종목 전체 보유수량을 초과한 처분');}
+     else {pooledTaxCosts.set(t.id,t.qty*unit);available-=t.qty;}
+    }
+    openingQty=available;openingCost=openingQty*unit;
+   }else{
+    for(const t of yr){
+     if(t.type==='BUY'){openingQty+=t.qty;openingCost+=t.amount;}
+     else if(t.qty>openingQty+1e-9){pooledTaxErrors.set(t.id,'동일 종목 전체 보유수량을 초과한 처분');}
+     else {const cost=openingQty>0?t.qty*openingCost/openingQty:0;pooledTaxCosts.set(t.id,cost);openingQty-=t.qty;openingCost-=cost;if(openingQty===0)openingCost=0;}
+    }
+   }
+  }
+ }
+ for(const a of db.assets){
+  const accountingMethod=selectedAccountingMethod(a.stock_code);
+  let q=0,book=0,tax=0,oci=0,pl=0,dividend=0,reserve=0;
+  const allEvents=[...db.trades.filter(t=>t.assetId===a.id).map(t=>({...t,kind:'trade'})),...db.valuations.filter(v=>v.assetId===a.id).map(v=>({...v,kind:'valuation'}))].sort((x,y)=>x.date.localeCompare(y.date)||(x.kind==='trade'?0:1)-(y.kind==='trade'?0:1)||x.id-y.id);
+  const events=allEvents.filter(e=>e.date<=asOf);
+  // Include the full available year in annual-average calculation, even when
+  // the display is filtered to an earlier date within that year.
+  const poolEvents=allEvents.filter(e=>fiscalYear(e.date)<=fiscalYear(asOf));
+  const bookPools=accountingMethod==='TOTAL'?annualPools(poolEvents,'TOTAL'):null;
+  // Legacy per-asset tax pool (not used for disposal cost); pooledTaxCosts is authoritative.
+  // Compute annual tax total-average units with opening basis carried from
+  // the preceding year's selected method (including moving-average years).
+  const taxPools=new Map();let carryQ=0,carryCost=0;
+  for(const yr of [...new Set(poolEvents.map(e=>fiscalYear(e.date)))].sort()){
+   const method=selectedTaxMethod(a.stock_code,yr);
+   const yrTrades=poolEvents.filter(e=>e.kind==='trade'&&fiscalYear(e.date)===yr).sort((x,y)=>x.date.localeCompare(y.date)||x.id-y.id);
+   const buys=yrTrades.filter(e=>e.type==='BUY');
+   const buyQ=buys.reduce((v,e)=>v+e.qty,0),buyCost=buys.reduce((v,e)=>v+e.amount,0);
+   const unit=(carryQ+buyQ)>0?(carryCost+buyCost)/(carryQ+buyQ):0;
+   taxPools.set(yr,{unit,method});
+   if(method==='TOTAL'){
+    const soldQ=yrTrades.filter(e=>e.type==='SELL').reduce((v,e)=>v+e.qty,0);
+    carryQ+=buyQ-soldQ;carryCost=carryQ>0?carryQ*unit:0;
+   }else{
+    for(const e of yrTrades){if(e.type==='BUY'){carryQ+=e.qty;carryCost+=e.amount}
+     if(e.type==='SELL'&&carryQ>0){const c=e.qty*carryCost/carryQ;carryQ-=e.qty;carryCost-=c;if(carryQ===0)carryCost=0;}}
+   }
+  }
+  let taxMovingQ=0,taxMovingCost=0,bookCostQ=0,bookCostBalance=0,bookLots=[];
+  for(const e of events){
+   let bookPL=0,taxPL=0,adj=0,classification=a.classification,desc='',direction='',reserveChange=0,deltaOCI=0,ociEquityTransfer=0,directEquityDisposal=0,ociTaxableCandidate=0,ociAdjustmentReview=false;
+   const oldBook=book,oldTax=tax,year=fiscalYear(e.date),taxMethod=selectedTaxMethod(a.stock_code,year);
+   if(e.kind==='trade'&&e.type==='BUY'){
+    if(!(e.qty>0)||e.amount<0){ledger.push({asset:a,date:e.date,desc:'입력 오류: 매수',error:true});continue}
+    q+=e.qty;book+=e.amount;tax+=e.amount;
+    bookCostQ+=e.qty;bookCostBalance+=e.amount;bookLots.push({id:e.id,qty:e.qty,unit:e.amount/e.qty});
+    taxMovingQ+=e.qty;taxMovingCost+=e.amount;
+    desc='매수 · 취득원가 증가';
+   }else if(e.kind==='trade'&&e.type==='SELL'){
+    if(!(e.qty>0)||e.qty>q){ledger.push({asset:a,date:e.date,desc:'오류: 보유수량 초과 매도',error:true});continue}
+    const proceeds=e.amount;
+    let accountingHistoricalCost=0;
+    if(accountingMethod==='TOTAL') accountingHistoricalCost=e.qty*(bookPools.get(year)?.unit||0);
+    else if(accountingMethod==='MOVING') accountingHistoricalCost=e.qty*(bookCostQ>0?bookCostBalance/bookCostQ:0);
+    else {
+     let remaining=e.qty;
+     let allocation=[];
+     if(accountingMethod==='SPECIFIC'){
+      allocation=Array.isArray(e.lotAllocation)?e.lotAllocation:[];
+      if(!allocation.length || Math.abs(allocation.reduce((v,x)=>v+Number(x.qty||0),0)-e.qty)>0.000001){ledger.push({asset:a,date:e.date,desc:'개별법: 매도 거래의 취득 LOT 배분이 누락되거나 수량이 일치하지 않습니다.',error:true});continue}
+     }else allocation=bookLots.map(l=>({id:l.id,qty:Math.min(remaining,Math.max(0,l.qty))})).filter(x=>{remaining-=x.qty;return x.qty>0});
+     if(allocation.some(x=>{const lot=bookLots.find(l=>l.id===Number(x.id));return !lot||Number(x.qty)<=0||Number(x.qty)>lot.qty;})){ledger.push({asset:a,date:e.date,desc:'개별법: 유효하지 않은 취득 LOT 배분입니다.',error:true});continue}
+     for(const x of allocation){const lot=bookLots.find(l=>l.id===Number(x.id));accountingHistoricalCost+=Number(x.qty)*lot.unit;lot.qty-=Number(x.qty)}
+    }
+    // The fair-value carrying amount removed is the fraction of the position
+    // being derecognized; this differs from historical acquisition cost.
+    const bookRemoved=book*(e.qty/q);
+    if(pooledTaxErrors.has(e.id)||!pooledTaxCosts.has(e.id)){ledger.push({asset:a,date:e.date,desc:'세법상 통합 원가계산 오류: '+(pooledTaxErrors.get(e.id)||'처분원가 없음'),error:true});continue}
+    const taxCost=pooledTaxCosts.get(e.id);
+    book-=bookRemoved;tax-=taxCost;q-=e.qty;
+    bookCostQ-=e.qty;bookCostBalance-=accountingHistoricalCost;
+    taxMovingQ-=e.qty;taxMovingCost-=taxCost;
+    if(q===0){book=0;tax=0;bookCostQ=0;bookCostBalance=0;taxMovingQ=0;taxMovingCost=0}
+    taxPL=proceeds-taxCost;
+    if(classification==='FVTPL')bookPL=proceeds-bookRemoved;
+    else {
+     // FVOCI equity: the disposal proceeds do not create a new OCI gain.
+     // Derecognize the instrument at carrying value, and keep P/L at zero.
+     // The difference between proceeds and carrying value is a direct equity
+     // disposal component; the accumulated OCI on the disposed shares can be
+     // transferred *within equity*, never recycled through profit or loss.
+     const qtyBefore=q+e.qty;
+     const accumulatedOCIShare=qtyBefore>0?oci*e.qty/qtyBefore:0;
+     ociEquityTransfer=accumulatedOCIShare;
+     directEquityDisposal=proceeds-bookRemoved;
+     oci-=accumulatedOCIShare;
+     bookPL=0;deltaOCI=0;
+     ociTaxableCandidate=taxPL;
+     ociAdjustmentReview=true;
+    }
+    // P/L-based taxable income bridge is not the same as reserve movement.
+    // FVOCI disposal's tax profit is a candidate taxable-income adjustment,
+    // subject to separate legal review and income-disposition approval.
+    adj=taxPL-bookPL;
+    reserveChange=(tax-book)-(oldTax-oldBook);
+    desc=`매도 · 회계 ${ {TOTAL:"총평균",MOVING:"이동평균",FIFO:"선입선출",SPECIFIC:"개별"}[accountingMethod]} 취득원가 ${roundW(accountingHistoricalCost)}원(참고), 회계 제거장부가 ${roundW(bookRemoved)}원, 세무 ${taxMethod==='TOTAL'?'총평균':'이동평균'} 처분원가 ${roundW(taxCost)}원`;
+   }else if(e.kind==='trade'&&e.type==='DIVIDEND'){
+    bookPL=e.amount;taxPL=e.amount;dividend+=e.amount;desc='배당수익 · 수입배당금 익금불산입 미적용';
+   }else if(e.kind==='valuation'){
+    const fair=q*e.price;
+    if(q===0){ledger.push({asset:a,date:e.date,desc:'오류: 보유수량 없는 평가',error:true});continue}
+    const gain=fair-book;book=fair;
+    if(classification==='FVTPL'){bookPL=gain;adj=-gain;desc='FVTPL 평가손익 · 세법상 평가 미인식 가정'}
+    else {deltaOCI=gain;oci+=gain;ociAdjustmentReview=true;desc='FVOCI 평가 · OCI 인식. 과세소득 조정·소득처분은 별도 검토'}
+    reserveChange=(tax-book)-(oldTax-oldBook);
+   }
+   if(adj>0.005)direction='익금산입 / 손금불산입';else if(adj<-.005)direction='익금불산입 / 손금산입';
+   pl+=bookPL;reserve+=reserveChange;
+   ledger.push({asset:a,date:e.date,kind:e.kind,type:e.type||'VALUATION',desc,qty:q,book:roundW(book),tax:roundW(tax),bookPL:roundW(bookPL),taxPL:roundW(taxPL),ociChange:roundW(deltaOCI),adj:roundW(adj),reserveChange:roundW(reserveChange),reserve:roundW(reserve),direction,sourceId:e.id,ociEquityTransfer:roundW(ociEquityTransfer),directEquityDisposal:roundW(directEquityDisposal),ociTaxableCandidate:roundW(ociTaxableCandidate),ociAdjustmentReview});
+  }
+  positions.push({asset:a,qty:q,book:roundW(book),tax:roundW(tax),oci:roundW(oci),pl:roundW(pl),dividend:roundW(dividend),reserve:roundW(reserve)});
+ }
+ // Allocate the stock-wide tax basis to accounting-classification positions
+ // proportionally by their remaining shares. This is an allocation for reporting,
+ // not an assertion that tax law creates separate FVOCI/FVTPL tax pools.
+ for(const code of stockCodes){
+  const stockPositions=positions.filter(p=>p.asset.stock_code===code);
+  const totalQ=stockPositions.reduce((n,p)=>n+p.qty,0);
+  const stockTrades=db.trades.filter(t=>db.assets.some(a=>a.id===t.assetId&&a.stock_code===code)&&t.date<=asOf&&['BUY','SELL'].includes(t.type)).sort((a,b)=>a.date.localeCompare(b.date)||a.id-b.id);
+  const totalBought=stockTrades.filter(t=>t.type==='BUY').reduce((n,t)=>n+t.amount,0);
+  const totalSoldCost=stockTrades.filter(t=>t.type==='SELL').reduce((n,t)=>n+(pooledTaxCosts.get(t.id)||0),0);
+  const totalBasis=Math.abs(totalQ)<1e-9?0:totalBought-totalSoldCost;
+  let assigned=0;
+  for(let i=0;i<stockPositions.length;i++){
+   const p=stockPositions[i],allocated=i===stockPositions.length-1?totalBasis-assigned:totalQ>0?totalBasis*p.qty/totalQ:0;
+   assigned+=allocated;
+   p.tax=roundW(allocated);p.reserve=roundW(p.tax-p.book);
+   p.taxAllocationMethod='POOLED_STOCK_PRO_RATA';
+  }
+ }
+ // Taxable-income adjustment, OCI changes, and reserve rollforward are
+ // separate dimensions. Never automatically label a bridge as '기타' or '유보'.
+ for(const row of ledger){
+  if(row.asset.classification!=='FVOCI'||row.error)continue;
+  row.ociTaxBridge=row.type==='SELL'?row.taxPL:0;
+  row.ociTaxBridgeNote=row.type==='SELL'?'FVOCI 처분: 세법상 처분손익의 과세소득 반영·소득처분 검토 필요':
+    row.type==='VALUATION'?'FVOCI 평가: OCI 변동은 당기손익 아님. 자본·세무기준 차이 검토 필요':'';
+  row.ociRecycling=false;
+  row.taxDisposition='REVIEW_REQUIRED';
+ }
+ ledger.sort((a,b)=>a.date.localeCompare(b.date)||a.asset.id-b.asset.id);
+ const reconciliation=stockCodes.map(code=>{
+  const ps=positions.filter(p=>p.asset.stock_code===code);
+  return {stock_code:code,qty:roundW(ps.reduce((n,p)=>n+p.qty,0)),book:roundW(ps.reduce((n,p)=>n+p.book,0)),tax:roundW(ps.reduce((n,p)=>n+p.tax,0)),reserve:roundW(ps.reduce((n,p)=>n+p.reserve,0)),fiscalYear:fiscalYear(asOf)};
+ });
+ return {positions,ledger,reconciliation};
+}
+function computedAsset(id){return calculation().positions.find(p=>p.asset.id===Number(id))}
+estimatedCarrying=function(id){return computedAsset(id)?.book??0};
+function renderEngine(){
+ const d=$('engineDate')?.value||'9999-12-31',res=calculation(d);
+ $('engineSummary').innerHTML='<div class="grid">'+[
+ ['회계 장부금액',res.positions.reduce((s,p)=>s+p.book,0)],
+ ['세무상 장부금액',res.positions.reduce((s,p)=>s+p.tax,0)],
+ ['FVTPL 손익 및 배당',res.positions.reduce((s,p)=>s+p.pl,0)],
+ ['세무상 장부금액 − 회계 장부금액',res.positions.reduce((s,p)=>s+p.reserve,0)]
+ ].map(([k,v])=>`<div class="card metric"><div class="k">${k}</div><div class="v">${won(v)}</div></div>`).join('')+'</div>';
+ $('enginePositions').innerHTML=table(['자산','분류','보유수량','회계 장부금액','세무상 장부금액','차이(세무−회계)','OCI 누적(참고)'],res.positions.map(p=>[esc(p.asset.asset_name),esc(p.asset.classification),p.qty+'주',won(p.book),won(p.tax),won(p.reserve),won(p.oci)]));
+ $('engineLedger').innerHTML=table(['일자','자산','이벤트','회계 당기손익','세무상 손익','OCI 변동','자본 내 OCI 대체','처분 자본 차액','과세소득 조정 후보 (+/-)','유보 증감 (세무−회계)','세무검토','근거'],res.ledger.map(x=>[esc(x.date),esc(x.asset.asset_name),esc(x.type||'오류'),won(x.bookPL),won(x.taxPL),won(x.ociChange),won(x.ociEquityTransfer||0),won(x.directEquityDisposal||0),won(x.adj),won(x.reserveChange),esc(x.taxDisposition||'—'),esc(x.desc)]));
+}
+function exportEngineCsv(){const res=calculation($('engineDate').value||'9999-12-31');const rows=[['date','asset_id','event','book_PL','tax_PL','OCI_change','OCI_equity_transfer','direct_equity_disposal','taxable_income_adjustment_candidate','OCI_tax_bridge_review','reserve_change','tax_disposition_review','book_basis','tax_basis','note'],...res.ledger.map(x=>[x.date,x.asset.id,x.type||'ERROR',x.bookPL,x.taxPL,x.ociChange,x.ociEquityTransfer||0,x.directEquityDisposal||0,x.adj,x.ociTaxBridge||0,x.reserveChange,x.taxDisposition||'',x.book,x.tax,x.desc])];download('accounting_tax_calculation.csv','\uFEFF'+rows.map(r=>r.map(v=>'"'+String(v??'').replaceAll('"','""')+'"').join(',')).join('\r\n'),'text/csv;charset=utf-8')}
+function addAutoSummary(){
+ const res=calculation();
+ const auto=res.ledger.filter(x=>Math.abs(x.adj||0)>.005);
+ $('adjustmentHistory').insertAdjacentHTML('beforebegin',`<div class="notice" id="autoAdjNote">자동 소득조정 ${auto.length}건 · 합계 ${won(auto.reduce((n,x)=>n+x.adj,0))}. 아래 표는 수동 입력 조정이며 자동 계산 결과는 <b>자동 계산 엔진</b>에서 확인하세요. 두 결과는 중복 합산하지 않습니다.</div>`);
+}
+renderAll=function(){originalRenderAll();renderPolicyStocks();renderEngine();document.querySelectorAll('#autoAdjNote').forEach(e=>e.remove());addAutoSummary()};
+saveTrade=function(e){
+ e.preventDefault();
+ const date=$('tDate').value,code=$('tStock').value.trim(),m=db.master.find(x=>x.code===code);
+ if(!m||!date)return notify('유효한 종목과 거래일을 입력하세요.');
+ let a=activeTrade==='BUY'?db.assets.find(x=>x.stock_code===code&&x.classification===$('tClass').value):getAsset($('tAsset').value);
+ if(activeTrade!=='BUY'&&(!a||a.stock_code!==code))return notify('기존 투자자산을 선택하세요.');
+ const qty=activeTrade==='DIVIDEND'?null:Number($('tQty').value),price=activeTrade==='DIVIDEND'?null:Number($('tPrice').value),amount=activeTrade==='DIVIDEND'?Number($('tAmount').value):qty*price;
+ if(!date||!Number.isFinite(amount)||amount<0)return notify('날짜와 금액을 확인하세요.');
+ if(activeTrade!=='DIVIDEND'&&(!Number.isInteger(qty)||qty<=0||!Number.isFinite(price)||price<0))return notify('수량과 주당가격을 확인하세요.');
+ if(activeTrade==='SELL'&&qty>holdings(a.id,date))return notify('거래일 기준 보유수량 초과입니다.');
+ if(activeTrade==='DIVIDEND'&&holdings(a.id,date)<=0)return notify('배당일 기준 보유수량이 없습니다.');
+ if(!a){a={id:++db.ids.asset,stock_code:code,asset_name:m.name,market:m.market,classification:$('tClass').value};db.assets.push(a)}
+ db.trades.push({id:++db.ids.trade,assetId:a.id,date,type:activeTrade,qty,price,amount,cost:null,note:$('tNote').value.trim()});
+ persist();['tQty','tPrice','tAmount','tCost','tNote'].forEach(k=>$(k).value='');notify('거래 저장 · 회계/세무 원장 자동 재계산 완료');
+};
+updateValuationPreview=function(){const a=getAsset($('vAsset').value);if(!a)return;const qty=holdings(a.id,$('vDate').value),price=Number($('vPrice').value||0);const previous=calculationBeforeValuation(a.id,$('vDate').value);$('vBefore').value=roundW(previous);$('vBefore').readOnly=true;$('valuationPreview').innerHTML=`평가일 보유수량: <b>${qty}주</b><br>평가 직전 회계 장부금액: <b>${won(previous)}</b><br>평가액: <b>${won(qty*price)}</b><br>${a.classification==='FVOCI'?'OCI 변동':'당기손익 평가손익'}: <b>${won(qty*price-previous)}</b>`};
+function calculationBeforeValuation(id,date){
+ // Replay only events preceding the proposed valuation; existing same-date valuation is excluded.
+ const saved=db.valuations;try{db.valuations=saved.filter(v=>v.date<date);return calculation(date).positions.find(p=>p.asset.id===id)?.book||0}finally{db.valuations=saved}
+}
+saveValuation=function(e){e.preventDefault();const a=getAsset($('vAsset').value),date=$('vDate').value,price=Number($('vPrice').value);if(!a||!date||!Number.isFinite(price)||price<0)return notify('평가 정보를 확인하세요.');const qty=holdings(a.id,date);if(qty<=0)return notify('평가일 보유수량이 없습니다.');if(db.valuations.some(v=>v.assetId===a.id&&v.date===date))return notify('같은 자산의 같은 날짜 평가는 이미 존재합니다.');const before=calculationBeforeValuation(a.id,date),fairValue=qty*price;db.valuations.push({id:++db.ids.valuation,assetId:a.id,date,qty,price,before,fairValue,gain:fairValue-before,note:$('vNote').value.trim()});persist();notify('평가 저장 · 회계/세무 원장 자동 재계산 완료')};
+renderReports=function(){if($('fiscalEndMonth'))$('fiscalEndMonth').value=String(db.fiscalEndMonth||12);const res=calculation();const r=$('pooledReconciliation');if(r)r.innerHTML=table(['종목','보유수량','회계 장부금액','통합 세무원가','차이'],res.reconciliation.map(x=>[esc(x.stock_code),x.qty+'주',won(x.book),won(x.tax),won(x.reserve)]));$('reportTable').innerHTML=table(['자산 ID','종목','분류','수량','회계 장부금액(계산)','세무상 장부금액(계산)','세무−회계 차이','자동 차이 누계','수동 유보(별도)','FVOCI OCI(참고)'],res.positions.map(p=>[p.asset.id,esc(p.asset.asset_name),p.asset.classification,p.qty+'주',won(p.book),won(p.tax),won(p.reserve),won(p.reserve),won(totalReserve(p.asset.id)),p.asset.classification==='FVOCI'?won(p.oci):'—']))};
+renderDashboard=function(){const res=calculation(),held=res.positions.filter(p=>p.qty>0);$('metrics').innerHTML=[['등록 투자자산',db.assets.length,'회계 분류별 관리'],['현재 보유 자산',held.length,'잔여수량 기준'],['누적 거래',db.trades.length,'매수 · 매도 · 배당'],['자동 장부가 차이',won(res.positions.reduce((n,p)=>n+p.reserve,0)),'세무상 − 회계상']].map(([k,v,s])=>`<div class="card metric"><div class="k">${k}</div><div class="v">${v}</div><div class="sub">${s}</div></div>`).join('');$('dashboardHoldings').innerHTML=table(['종목코드','종목명','분류','보유수량','회계 장부금액','세무상 장부금액','차이'],held.map(p=>[esc(p.asset.stock_code),esc(p.asset.asset_name),esc(p.asset.classification),p.qty+'주',won(p.book),won(p.tax),won(p.reserve)]));$('recentTrades').innerHTML=table(['일자','자산','구분','금액'],db.trades.slice(-5).reverse().map(t=>[esc(t.date),esc(getAsset(t.assetId)?.asset_name),esc(t.type),won(t.amount)]));$('recentAdjustments').innerHTML=table(['일자','유형','조정금액','유보 증감'],res.ledger.filter(x=>x.adj).slice(-5).reverse().map(x=>[esc(x.date),esc(x.type),won(x.adj),won(x.reserveChange)]))};
+// Preserve prior local data and keep manually entered adjustments separate from computed results.
+function renderDividendCalc(){const gross=Number($('divGross').value),pct=Number($('divOwnership').value),interest=Number($('divInterest').value),eligible=$('divEligible').value;if(![gross,pct,interest].every(Number.isFinite)||gross<0||interest<0||pct<0||pct>100){$('divCalcResult').textContent='금액과 지분율을 확인하세요.';return}if(eligible!=='yes'){$('divCalcResult').textContent=eligible==='exclude'?'적용 배제: 익금불산입액 0원':'보유기간 및 적용 제외 요건 확인 전: 자동 산출 보류';return}const rate=pct>=50?1:pct>=20?.8:.3,raw=gross*rate,excluded=Math.max(0,raw-interest);$('divCalcResult').innerHTML=`적용률 <b>${rate*100}%</b> · 잠정 익금불산입 <b>${won(raw)}</b> · 차감 후 익금불산입 <b>${won(excluded)}</b><br><span class="hint">입력한 차감액의 적정성 및 출자비율·3개월 보유 판정은 사용자가 검증해야 합니다.</span>`}renderDividendCalc();$('engineDate').value=today();$('vBefore').readOnly=true;$('tCost').readOnly=true;
+$('costField').querySelector('label').textContent='매도분 취득원가 — 자동 계산';
+$('costField').querySelector('input').placeholder='회계 선택방법 / 세법 선택방법으로 자동 계산';
+$('settings').insertAdjacentHTML('beforeend','<div class="panel"><h2>적용 근거 · 범위</h2><p class="hint">K-IFRS 제1109호 금융상품: FVTPL 평가손익은 당기손익, 지분상품 FVOCI는 OCI로 인식하며 처분 시 당기손익 재분류를 하지 않습니다. 법인세법 제18조·제42조: 일반적인 자산 평가손익의 세무상 불인정(예외 있음). 시행령 제75조: 주식의 원가 계산에 총평균법·이동평균법. 법인세법 제18조의2: 수입배당금 익금불산입 요건 별도 확인.</p><p class="hint">규정: <a target="_blank" href="https://www.law.go.kr/법령/법인세법/제18조">법인세법 제18조</a> · <a target="_blank" href="https://www.law.go.kr/법령/법인세법/제18조의2">제18조의2</a> · <a target="_blank" href="https://www.law.go.kr/법령/법인세법시행령/제75조">시행령 제75조</a></p></div>');
+
+const beforeSpecificSaveTrade=saveTrade;
+saveTrade=function(e){
+ if(activeTrade!=='SELL'||selectedAccountingMethod(getAsset($('tAsset').value)?.stock_code||$('tStock').value.trim())!=='SPECIFIC')return beforeSpecificSaveTrade(e);
+ const raw=$('tLotAllocation').value.trim(),parts=raw.split(',').map(x=>x.trim()).filter(Boolean);
+ const allocations=parts.map(x=>{const m=x.match(/^(\d+)\s*:\s*(\d+)$/);return m?{id:Number(m[1]),qty:Number(m[2])}:null});
+ const expected=Number($('tQty').value);
+ if(!parts.length||allocations.some(x=>!x)||allocations.reduce((v,x)=>v+x.qty,0)!==expected){e.preventDefault();notify('개별법 취득 LOT 배분을 매도수량과 일치하게 입력하세요.');return}
+ const oldLength=db.trades.length;
+ beforeSpecificSaveTrade(e);
+ if(db.trades.length>oldLength){db.trades[db.trades.length-1].lotAllocation=allocations;persist();$('tLotAllocation').value=''}
+};
+function updateLotField(){const el=$('lotAllocationField');if(el)el.style.display=activeTrade==='SELL'&&selectedAccountingMethod(getAsset($('tAsset').value)?.stock_code||$('tStock').value.trim())==='SPECIFIC'?'block':'none'}
+const previousTradeType=tradeType;tradeType=function(t){previousTradeType(t);updateLotField()};
+$('tStock').addEventListener('input',updateLotField);updateLotField();
+renderAll();
+</script>
+<script>
+/* Contextual rule references: explanatory summaries, not reproduced standard text. */
+const RULES={
+ classification:{title:'지분상품 분류 · FVTPL / FVOCI',standard:'K-IFRS 제1109호 금융상품 · 문단 4.1.4, 5.7.5~5.7.6',meaning:'지분상품은 원칙적으로 공정가치 변동을 당기손익으로 인식합니다. 단기매매목적이 아닌 적격 지분상품은 최초 인식 시점에 FVOCI 지정을 선택할 수 있으며, 지정은 취소할 수 없습니다.',calculation:'FVTPL 평가손익은 당기손익, 적격 FVOCI 지분상품의 평가손익은 기타포괄손익으로 분리합니다.',caution:'종목코드만으로 FVOCI 적격성이나 최초 지정의 유효성을 판단할 수 없습니다. 실제 지정 단위와 보유 목적을 확인해야 합니다.',links:[['한국회계기준원 (기준서 확인)','https://www.kasb.or.kr/']]},
+ costAccounting:{title:'회계상 취득원가 배분방법',standard:'K-IFRS 제1109호 금융상품 · 제1008호 회계정책 검토',meaning:'이 웹앱에서는 종목별로 총평균법·이동평균법·선입선출법·개별법을 계산 시나리오로 제공합니다. 최초 기본 선택값은 총평균법입니다.',calculation:'선택한 방법으로 매도 대상의 역사적 취득원가를 산출합니다. 공정가치로 측정하는 주식의 처분 시 회계상 제거금액과는 구분됩니다.',caution:'네 가지 방식이 K-IFRS상 모든 지분상품에 자유롭게 허용된다는 뜻이 아닙니다. 적용 가능성과 회계정책의 일관성은 별도 검토가 필요합니다.',links:[['한국회계기준원','https://www.kasb.or.kr/']]},
+ costTax:{title:'세법상 주식 취득원가 계산',standard:'법인세법 시행령 제75조 · 유가증권의 평가',meaning:'일반 내국법인의 주식에 대한 원가 계산은 총평균법 또는 이동평균법을 기준으로 검토합니다. 신고하지 않은 경우의 적용방법 및 신고·변경 요건을 확인해야 합니다.',calculation:'총평균법은 사업연도 단위 평균을, 이동평균법은 취득 시마다 갱신한 평균을 이용해 처분원가를 계산합니다.',caution:'법인별 신고 이력, 유가증권 종류, 세법상 계산 단위 및 취득부대비용 등은 추가 확인이 필요합니다.',links:[['법인세법 시행령 제75조','https://www.law.go.kr/법령/법인세법시행령/제75조']]},
+ initial:{title:'최초 인식 및 거래원가',standard:'K-IFRS 제1109호 · 문단 5.1.1',meaning:'금융자산은 최초 인식 시 공정가치로 측정합니다. FVTPL이 아닌 금융자산의 직접 관련 거래원가는 최초 측정금액에 포함하고, FVTPL 거래원가는 일반적으로 비용으로 처리합니다.',calculation:'매수원가와 거래수수료를 별도로 입력받는 경우 회계 분류에 따라 취득원가 또는 당기비용으로 배분해야 합니다.',caution:'현재 웹앱은 거래수수료 입력·처리까지 완전 구현하지 않았으므로 실제 취득원가와 차이가 날 수 있습니다.',links:[['한국회계기준원','https://www.kasb.or.kr/']]},
+ valuation:{title:'공정가치 평가손익 · 당기손익과 OCI',standard:'K-IFRS 제1109호 · 문단 5.7.1, 5.7.5~5.7.6',meaning:'FVTPL은 공정가치 변동을 당기손익으로 인식합니다. 적격 지분상품 FVOCI는 공정가치 변동을 기타포괄손익으로 인식합니다.',calculation:'평가일 보유수량 × 공정가치 − 평가 직전 회계상 장부금액을 계산한 뒤 회계 분류에 따라 손익 표시 위치를 구분합니다.',caution:'FVOCI 지분상품의 누적 OCI는 처분 시 당기손익으로 재분류하지 않습니다. 자본 내 대체는 별도 정책 검토가 필요합니다.',links:[['한국회계기준원','https://www.kasb.or.kr/']]},
+ sale:{title:'처분 및 금융자산 제거',standard:'K-IFRS 제1109호 · 금융자산 제거 및 지분상품 FVOCI 규정',meaning:'금융자산의 계약상 현금흐름에 대한 권리가 소멸하거나 제거 요건을 충족하면 금융자산을 제거합니다. FVOCI 지정 지분상품의 누적 OCI는 처분 시 당기손익으로 재분류하지 않습니다.',calculation:'매각대금, 제거할 회계상 장부금액, 세법상 처분원가를 구분하여 회계·세무 차이를 산출합니다.',caution:'매도분의 원가 배분과 공정가치 장부금액 제거는 동일 개념이 아닙니다. 부분 매도 및 분류별 보유 시 검토가 필요합니다.',links:[['한국회계기준원','https://www.kasb.or.kr/']]},
+ taxValuation:{title:'유가증권 평가손익의 세무상 처리',standard:'법인세법 제42조 · 자산·부채의 평가',meaning:'일반적인 유가증권 공정가치 평가손익은 회계상 인식 여부와 별도로 세법상 인정 여부를 판단합니다. 법정 예외가 존재합니다.',calculation:'FVTPL 평가손익이 세법상 인정되지 않는 경우 세무조정과 추후 환입 가능성을 계산합니다. FVOCI 평가차이는 당기손익 조정과 별도로 표시합니다.',caution:'평가손익 불인정을 모든 법인·모든 주식에 무조건 적용할 수는 없습니다. 법인 유형과 법정 예외를 확인해야 합니다.',links:[['법인세법 제42조','https://www.law.go.kr/법령/법인세법/제42조']]},
+ dividend:{title:'배당수익 및 수입배당금 익금불산입',standard:'K-IFRS 제1109호 문단 5.7.6 · 법인세법 제18조의2',meaning:'지분상품 배당은 원칙적으로 당기손익으로 인식하되 투자원가 회수에 해당하는 경우를 검토합니다. 내국법인 수입배당금의 익금불산입은 지분율, 보유기간, 제외 요건 등에 따라 판단합니다.',calculation:'배당금액을 별도 이벤트로 기록하고 법정 요건 확인 후 익금불산입 가능 금액을 계산합니다.',caution:'차입금 이자 관련 차감, 보유기간, 적용 배제 등은 실제 사실관계 확인이 필요합니다. 시뮬레이터 결과는 신고금액이 아닙니다.',links:[['법인세법 제18조의2','https://www.law.go.kr/법령/법인세법/제18조의2'],['한국회계기준원','https://www.kasb.or.kr/']]},
+ adjustment:{title:'세무조정 · 익금산입 / 손금산입',standard:'법인세법 제15조·제19조·제42조 및 관련 규정',meaning:'회계상 인식한 수익·비용과 법인세법상 익금·손금의 차이를 조정합니다. 조정 방향과 소득처분은 발생 원인에 따라 달라집니다.',calculation:'거래·평가 이벤트별 회계손익과 세무상 인정금액을 비교하고 조정액을 산출합니다.',caution:'장부금액 차이가 곧바로 신고서상 유보와 일치하는 것은 아닙니다. OCI 관련 차이는 별도 검토가 필요합니다.',links:[['법인세법 제15조','https://www.law.go.kr/법령/법인세법/제15조'],['법인세법 제19조','https://www.law.go.kr/법령/법인세법/제19조']]},
+ reserve:{title:'유보 발생·환입 및 잔액',standard:'법인세법상 소득처분 및 세무조정 실무',meaning:'회계와 세법의 일시적 차이 중 유보로 관리할 금액은 최초 발생, 후속 증감, 처분 시 환입을 연결해 추적합니다.',calculation:'기초 유보 + 당기 유보 증가 − 당기 환입 등을 원천 이벤트와 연결해 잔액을 계산합니다.',caution:'유보·△유보 부호, 귀속사업연도, OCI 관련 처리와 세무상 환입 사유는 개별 검증이 필요합니다.',links:[['국가법령정보센터','https://www.law.go.kr/법령/법인세법']]}
+};
+let rulePreviousFocus=null;
+function openRule(key){const r=RULES[key];if(!r)return;rulePreviousFocus=document.activeElement;const overlay=document.createElement('div');overlay.className='rule-overlay';overlay.id='ruleOverlay';overlay.setAttribute('role','presentation');const dialog=document.createElement('div');dialog.className='rule-dialog';dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-labelledby','ruleTitle');const top=document.createElement('div');top.className='rule-top';const heading=document.createElement('h2');heading.id='ruleTitle';heading.textContent=r.title;const close=document.createElement('button');close.className='rule-close';close.type='button';close.textContent='×';close.setAttribute('aria-label','닫기');close.onclick=closeRule;top.append(heading,close);dialog.append(top);const add=(label,value,cls)=>{const h=document.createElement('h3');h.textContent=label;const p=document.createElement('p');p.textContent=value;if(cls)p.className=cls;dialog.append(h,p)};add('관련 기준',r.standard,'rule-ref');add('기준의 의미',r.meaning);add('프로그램 계산에 적용하는 방식',r.calculation);add('주의사항',r.caution,'rule-caution');const h=document.createElement('h3');h.textContent='공식 자료 확인';dialog.append(h);r.links.forEach(([name,url])=>{const p=document.createElement('p');const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=name+' ↗';p.append(a);dialog.append(p)});const foot=document.createElement('p');foot.className='rule-ref';foot.textContent='요약 설명이며 기준서 원문을 그대로 전재한 것이 아닙니다. 적용 시점의 원문·개정 여부를 확인하세요.';dialog.append(foot);overlay.append(dialog);overlay.addEventListener('click',e=>{if(e.target===overlay)closeRule()});document.body.append(overlay);close.focus()}
+function closeRule(){document.getElementById('ruleOverlay')?.remove();rulePreviousFocus?.focus?.()}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.getElementById('ruleOverlay'))closeRule()});
+function attachRuleButtons(){const rules=[['tClass','classification'],['accountingMethod','costAccounting'],['engineMethod','costTax'],['tQty','initial'],['tPrice','initial'],['tAsset','sale'],['vPrice','valuation'],['vBefore','valuation'],['divGross','dividend'],['divOwnership','dividend'],['divEligible','dividend'],['aType','adjustment'],['aDirection','adjustment'],['aReserve','reserve'],['aParent','reserve']];for(const [id,key] of rules){const el=document.getElementById(id);if(!el)continue;const field=el.closest('.field');const label=field?.querySelector('label');if(!label||label.querySelector('.rule-help'))continue;const btn=document.createElement('button');btn.type='button';btn.className='rule-help';btn.textContent='ⓘ';btn.title='관련 회계·세법 기준 보기';btn.setAttribute('aria-label',label.textContent+' 관련 기준 보기');btn.onclick=()=>openRule(key);label.append(btn)}
+const sections=[['trades','거래·배당 관련 기준','dividend'],['valuations','평가손익 회계기준','valuation'],['adjustments','세무조정 기준','adjustment'],['engine','평가손익의 세법상 처리','taxValuation'],['engine','유보 및 환입 기준','reserve']];for(const [section,title,key] of sections){const panel=document.querySelector('#'+section+' .panel');if(!panel||panel.querySelector('[data-rule="'+key+'"]'))continue;const b=document.createElement('button');b.type='button';b.className='btn';b.dataset.rule=key;b.textContent='ⓘ '+title;b.onclick=()=>openRule(key);const h=panel.querySelector('h2');if(h)h.insertAdjacentElement('afterend',b)}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attachRuleButtons);else attachRuleButtons();
+</script>
+
+<style>
+.krx-line{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:7px}.krx-line .btn{font-size:12px}.krx-status{font-size:12px;color:var(--muted,#64748b)}.krx-results{margin-top:12px}.krx-results table{width:100%}.krx-results .btn{font-size:12px}
+</style>
+<script>
+// KRX daily closing-price lookup: the key is kept on the local Python server, never in browser storage.
+let krxLastBatch=[];
+async function krxRequest(day,codes,previous){
+ const q=new URLSearchParams({date:day,codes:codes.join(','),previous:previous?'1':'0'});
+ let res;try{res=await fetch('/api/krx/prices?'+q.toString())}catch(e){throw Error('로컬 Python 서버에 연결할 수 없습니다. python3 server.py 로 실행하세요.')}
+ let body;try{body=await res.json()}catch(e){throw Error('시세 API가 연결되지 않았습니다. HTML 파일을 직접 연 경우 로컬 서버로 실행하세요.')}
+ if(!res.ok)throw Error(body.error||'KRX 시세 조회 실패');return body;
+}
+function krxMsg(id,msg){const el=document.getElementById(id);if(el)el.textContent=msg}
+async function lookupTradeKrx(){
+ const code=document.getElementById('tStock').value.trim(),day=document.getElementById('tDate').value;
+ if(!/^\d{6}$/.test(code)||!day)return krxMsg('krxTradeStatus','종목코드(6자리)와 거래일자를 입력하세요.');
+ krxMsg('krxTradeStatus','KRX 종가 조회 중…');
+ try{const d=await krxRequest(day,[code],document.getElementById('krxPrevious').checked),p=d.prices[code];
+ if(!p)return krxMsg('krxTradeStatus','해당 날짜 또는 직전 7일 이내 시세가 없습니다. 종목코드와 상장 여부를 확인하세요.');
+ document.getElementById('tPrice').value=p.price;
+ krxMsg('krxTradeStatus',`${p.price_date} 종가 ${Number(p.price).toLocaleString('ko-KR')}원 입력됨 · ${p.name} · 실제 체결단가와 다르면 수정하세요.`);
+ }catch(e){krxMsg('krxTradeStatus',e.message)}
+}
+async function lookupValuationKrx(){
+ const asset=getAsset(document.getElementById('vAsset').value),day=document.getElementById('vDate').value;
+ if(!asset||!day)return krxMsg('krxValStatus','평가 대상 자산과 평가일을 선택하세요.');
+ krxMsg('krxValStatus','KRX 종가 조회 중…');
+ try{const d=await krxRequest(day,[asset.stock_code],document.getElementById('krxPrevious').checked),p=d.prices[asset.stock_code];
+ if(!p)return krxMsg('krxValStatus','조회 가능한 종가가 없습니다.');
+ document.getElementById('vPrice').value=p.price;
+ document.getElementById('vPrice').dispatchEvent(new Event('input',{bubbles:true}));
+ krxMsg('krxValStatus',`${p.price_date} 종가 ${Number(p.price).toLocaleString('ko-KR')}원 입력됨 · 평가 저장 버튼을 눌러야 장부에 반영됩니다.`);
+ }catch(e){krxMsg('krxValStatus',e.message)}
+}
+async function lookupAllKrx(){
+ const day=document.getElementById('vDate').value,output=document.getElementById('krxBatch');
+ if(!day){output.textContent='평가일을 선택하세요.';return}
+ const active=db.assets.filter(a=>holdings(a.id,day)>0);
+ const codes=[...new Set(active.map(a=>a.stock_code))];
+ if(!codes.length){output.textContent='해당 날짜에 보유 중인 종목이 없습니다.';return}
+ output.textContent='보유 종목의 KRX 종가를 조회하고 있어요…';
+ try{const data=await krxRequest(day,codes,document.getElementById('krxPrevious').checked);
+ krxLastBatch=active.filter(a=>data.prices[a.stock_code]).map(a=>({asset:a,quote:data.prices[a.stock_code]}));
+ let html='<table><thead><tr><th>종목</th><th>분류</th><th>보유수량</th><th>시세일</th><th>종가</th><th>상태</th></tr></thead><tbody>';
+ for(const r of krxLastBatch){const qty=holdings(r.asset.id,day),exists=db.valuations.some(v=>v.assetId===r.asset.id&&v.date===day);
+ html+=`<tr><td>${esc(r.asset.asset_name)}</td><td>${esc(r.asset.classification)}</td><td>${qty}</td><td>${r.quote.price_date}</td><td>${Number(r.quote.price).toLocaleString('ko-KR')}</td><td>${exists?'평가 기록 있음':'미확정'}</td></tr>`}
+ html+='</tbody></table>';
+ if(data.missing.length)html+=`<p class="hint">시세 없음: ${data.missing.map(esc).join(', ')}</p>`;
+ html+='<p class="hint">조회된 종가는 아직 회계 장부에 반영되지 않았습니다. 휴장일 직전 종가 사용 시 실제 평가일과 시세일을 구분하여 검토하세요.</p>';
+ html+='<button class="btn primary" type="button" onclick="confirmKrxBatch()">검토한 시세로 평가 기록 일괄 생성</button>';
+ output.innerHTML=html;
+ }catch(e){output.textContent=e.message}
+}
+function confirmKrxBatch(){
+ const day=document.getElementById('vDate').value;
+ if(!krxLastBatch.length)return;
+ if(!confirm(`${day} 평가 기록을 ${krxLastBatch.length}개 자산에 생성할까요? 기존 동일 날짜 평가는 건너뜁니다.`))return;
+ let count=0,skip=0;
+ for(const {asset,quote} of krxLastBatch){
+  if(db.valuations.some(v=>v.assetId===asset.id&&v.date===day)){skip++;continue}
+  const qty=holdings(asset.id,day);if(qty<=0){skip++;continue}
+  const before=calculationBeforeValuation(asset.id,day),fairValue=qty*quote.price;
+  db.valuations.push({id:++db.ids.valuation,assetId:asset.id,date:day,qty,price:quote.price,before,fairValue,gain:fairValue-before,note:`KRX 종가 조회 · 시세일 ${quote.price_date} · ${quote.source}`});count++;
+ }
+ persist();krxLastBatch=[];document.getElementById('krxBatch').textContent=`${count}건 평가 저장, ${skip}건 건너뜀. 회계·세무 원장을 확인하세요.`;
+}
+function initKrxUI(){
+ const price=document.getElementById('tPrice');const val=document.getElementById('vPrice');if(!price||!val)return;
+ price.insertAdjacentHTML('afterend','<div class="krx-line"><button class="btn" type="button" onclick="lookupTradeKrx()">KRX 취득일 종가 조회</button><span class="krx-status" id="krxTradeStatus">실제 체결단가는 직접 확인해야 합니다.</span></div>');
+ val.insertAdjacentHTML('afterend','<div class="krx-line"><button class="btn" type="button" onclick="lookupValuationKrx()">KRX 평가일 종가 조회</button><span class="krx-status" id="krxValStatus">조회 후 평가 기록 저장</span></div>');
+ const vpanel=document.querySelector('#valuations .panel');vpanel.insertAdjacentHTML('beforeend','<div class="separator"></div><h3>KRX 보유종목 일괄 시세 조회</h3><p class="hint">평가일에 보유한 종목을 조회하고, 확인 후 평가 기록을 일괄 생성합니다. 동일 종목의 분류별 보유분에는 같은 시장 종가를 적용합니다.</p><button type="button" class="btn" onclick="lookupAllKrx()">보유 종목 일괄 종가 조회</button><div id="krxBatch" class="krx-results"></div>');
+ const check=document.createElement('div');check.className='notice';check.innerHTML='<label><input type="checkbox" id="krxPrevious" checked> 휴장일이면 최대 7일 전까지 직전 거래일 종가 검색</label><p class="hint">KRX 시세는 2010년 이후 일별 자료입니다. 가격 조회와 거래/평가 확정은 별도이며, API 인증키는 로컬 Python 서버 환경변수에 보관합니다.</p>';
+ vpanel.insertAdjacentElement('afterbegin',check);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initKrxUI);else initKrxUI();
+</script>
+<script>
+async function refreshClosingUI(){
+ try{const year=Number(document.getElementById('validateYear').value);if(!year)throw Error('사업연도를 입력하세요.');
+ const out=await dbRequest('/api/closing/summary?year='+year);
+ const keys=[...new Set([...Object.keys(out.opening),...Object.keys(out.movements),...Object.keys(out.ending)])];
+ const rows=keys.map(k=>[esc(k),won(out.opening[k]||0),won(out.movements[k]||0),won(out.ending[k]||0)]);
+ const positions=calculation(fiscalEndDate(year)).positions;
+ const compare=positions.map(p=>{const aid=String(p.asset.id),actual=Object.entries(out.ending).filter(([k])=>k.split('|')[0]===aid).reduce((n,[,v])=>n+Number(v),0),expected=p.tax-p.book,diff=actual-expected;return [esc(p.asset.asset_name),esc(p.asset.classification),won(expected),won(actual),won(diff),Math.abs(diff)<=1?'일치':'불일치'];});
+ document.getElementById('closingResult').innerHTML='<b>'+year+' 사업연도</b> · '+(out.close?'확정됨':'미확정')+' · 직전 결산 '+(out.prior_closed?'확정':'미확정')+table(['자산|유보항목','기초','당기 증감','기말'],rows)+'<h4>기말 유보 자동 대사 (회계·세무 장부금액 기준)</h4>'+table(['종목','분류','세무−회계','승인 유보잔액','차이','검증'],compare)+'<p class="hint">FVOCI 처분의 환입은 검증표에서 담당자가 확인해야 합니다. 차이가 있으면 결산 확정이 차단됩니다.</p>';
+ }catch(e){document.getElementById('closingResult').textContent='조회 실패: '+e.message}
+}
+async function closeYearUI(){
+ try{await dbSaveQueue;const year=Number(document.getElementById('validateYear').value);if(!confirm(year+'사업연도를 확정할까요? 확정 후 과거 거래와 정책 수정이 차단됩니다.'))return;
+ const out=await dbRequest('/api/closing/close',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({year,reviewer:document.getElementById('closeReviewer').value,note:document.getElementById('closeNote').value,acknowledge_warnings:document.getElementById('closeWarn').checked,positions:calculation(fiscalEndDate(year)).positions.map(p=>({assetId:p.asset.id,qty:p.qty,book:p.book,tax:p.tax}))})});
+ await refreshClosingUI();notify('사업연도 결산을 확정했습니다.');
+ }catch(e){notify('결산 확정 실패: '+e.message)}
+}
+
+let currentWorkpapers=[];
+async function generateWorkpapersUI(){
+ try{
+  await dbSaveQueue;
+  const year=Number($('validateYear').value),end=fiscalEndDate(year),rows=calculation(end).ledger;
+  const candidates=rows.filter(r=>!r.error&&fiscalYear(r.date)===year&&['SELL','VALUATION'].includes(r.type)).map(r=>({
+   asset_id:r.asset.id,stock_code:r.asset.stock_code,asset_name:r.asset.asset_name,
+   classification:r.asset.classification,source_type:r.kind==='valuation'?'valuation':'trade',source_id:r.sourceId,
+   date:r.date,event:r.type,book_pl:r.bookPL,tax_pl:r.taxPL,oci_change:r.ociChange,
+   oci_equity_transfer:r.ociEquityTransfer||0,candidate_adjustment:r.adj,reserve_change:r.reserveChange,
+   tax_basis:r.tax,book_basis:r.book,note:r.desc,recognition:r.asset.classification==='FVOCI'?'OCI':'PL'
+  }));
+  const result=await dbRequest('/api/workpapers/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({year,expected_revision:dbRevision,candidates})});
+  notify(result.created+'건의 검증표 초안을 생성했습니다.');await loadWorkpapersUI();
+ }catch(e){notify('검증표 생성 실패: '+e.message)}
+}
+async function loadWorkpapersUI(){
+ try{
+  await dbSaveQueue;
+  const result=await dbRequest('/api/workpapers?year='+encodeURIComponent($('validateYear').value));currentWorkpapers=result.items;
+  $('workpaperList').innerHTML=table(['ID','원천','상태','회계분류','조정 후보','검토'],result.items.map(w=>[
+   w.id,esc(w.source_key),esc(w.status),esc(w.candidate.classification),won(w.candidate.candidate_adjustment),
+   `<button class="btn" onclick="showWorkpaperUI(${w.id})">검증표 열기</button>`
+  ]));
+ }catch(e){notify('검증표 조회 실패: '+e.message)}
+}
+function suggestedWorkpaperRows(a){
+ const rows=[];
+ const add=(signed,disposition,movement,reason)=>{
+  if(Math.abs(signed)<0.005)return;
+  rows.push({direction:signed>0?'익금산입':'손금산입',disposition,amount:String(Math.abs(signed)),reserve_movement:String(movement),legal_basis:'',review_hint:reason});
+ };
+ if(a.classification==='FVOCI'){
+  if(a.event==='VALUATION'){
+   // OCI is not profit or loss; show the offsetting taxable-income and reserve rows.
+   const gain=Number(a.oci_change||0);
+   add(gain,'기타',0,'OCI 인식 금액의 세무조정 검토');
+   add(-gain,gain>=0?'△유보':'유보',-gain,'평가로 인한 장부가-세무원가 차이 검토');
+  }else if(a.event==='SELL'){
+   add(Number(a.tax_pl||0),'기타',0,'처분 시 세법상 손익 반영 검토');
+   const reserve=Number(a.reserve_change||0);
+   add(reserve,reserve>0?'유보':'△유보',reserve,'기존 유보 환입 및 잔여 유보 대사 필요: 계산 후보는 회계분류별 통합 원가 배분과 다를 수 있음');
+  }
+ }else{
+  const adj=Number(a.candidate_adjustment||0),reserve=Number(a.reserve_change||0);
+  add(adj,reserve>0?'유보':reserve<0?'△유보':'기타',reserve,'당기손익 조정 및 유보 대사 검토');
+ }
+ return rows;
+}
+function showWorkpaperUI(id){
+ const w=currentWorkpapers.find(x=>x.id===id);if(!w)return;const a=w.candidate;
+ const checks=w.checks.map(c=>`<div class="${c.manual?'hint':c.passed?'notice':'alert'}">${c.manual?'담당자 확인':c.passed?'통과':'오류'} · ${esc(c.name)} ${esc(c.note||'')}</div>`).join('');
+ const suggested=suggestedWorkpaperRows(a);
+ const first=suggested[0]||{direction:'익금산입',disposition:'기타',amount:'0',reserve_movement:'0'};
+ const direction=first.direction,disposition=first.disposition;
+ $('workpaperDetail').innerHTML=`<div class="panel"><h3>검증표 #${id} · ${esc(w.status)}</h3>
+ <p>종목 ${esc(a.asset_name)} (${esc(a.stock_code)}) · ${esc(a.date)} · ${esc(a.event)} · ${esc(a.classification)}</p>
+ ${table(['회계 인식','회계 PL','세법상 손익','OCI 변동','과세소득 조정 후보','유보 증감 후보'],[[esc(a.recognition),won(a.book_pl),won(a.tax_pl),won(a.oci_change),won(a.candidate_adjustment),won(a.reserve_change)]])}
+ <h4>자동 검증 및 법령 검토</h4>${checks}<p class="hint">자동 생성 조정 초안은 ${suggested.length}행입니다. FVOCI 처분 시 유보 환입 후보는 통합 원가 배분과 다를 수 있으므로 검토자가 실제 환입액을 확인하고 승인해야 합니다.</p><p class="hint">법령 참고: 법인세법 제15·19·42조, 시행령 제75·106조, K-IFRS 1109. 실제 적용 요건·시행 시점·예외 규정은 검토자가 확인해야 합니다. 법적 적정성 자동 인증 아님.</p>
+ ${w.status==='DRAFT'?`<div class="formgrid"><div class="field"><label>검토자</label><input id="wpReviewer"></div><div class="field"><label>조정 방향</label><select id="wpDirection"><option>익금산입</option><option>손금산입</option><option>익금불산입</option><option>손금불산입</option></select></div><div class="field"><label>소득처분</label><select id="wpDisposition"><option>유보</option><option>△유보</option><option>기타</option><option>기타사외유출</option><option>상여</option><option>배당</option></select></div><div class="field"><label>조정 금액(양수)</label><input id="wpAmount" type="number" min="0.01" step="any" value="${first.amount}"></div><div class="field"><label>유보 증감액(부호 포함)</label><input id="wpReserve" type="number" step="any" value="0"></div><div class="field full"><label>적용 법령 및 판단 근거</label><textarea id="wpBasis" placeholder="해당 사업연도 적용 조문, 예외 검토 및 소득처분 근거"></textarea></div><div class="field full"><label>추가 조정 행 (JSON 배열, 선택)</label><textarea id="wpExtra" placeholder='[ {"direction":"익금산입","disposition":"기타","amount":"200","reserve_movement":"0","legal_basis":"검토 근거"} ]'></textarea><p class="hint">한 거래의 복수 조정은 추가 행에 JSON 배열로 입력할 수 있습니다. 각 행의 법령·검토 근거를 반드시 입력하세요.</p></div><div class="field full"><label>검토 의견(10자 이상)</label><textarea id="wpNote"></textarea></div><div class="field full"><label><input id="wpAcknowledge" type="checkbox"> 적용 법령, 조정 방향, 소득처분 및 유보 환입을 검토했습니다.</label></div><div class="field full"><button class="btn primary" onclick="approveWorkpaperUI(${id})">검토 완료 및 승인 · 유보원장 반영</button></div></div><p class="hint">추가 조정 행은 JSON 배열 형식으로 입력합니다. 편집형 다중 행 UI는 추후 개선 대상입니다.</p>`:`<p class="notice">${esc(w.status)} · 승인자 ${esc(w.reviewer||'—')} · ${esc(w.approved_at||'—')}<br>검토 의견: ${esc(w.review_note||'—')}</p>${w.status==='APPROVED'?`<button class="btn danger" onclick="cancelWorkpaperUI(${id})">승인 취소 · 유보 역분개</button>`:''}`}
+ </div>`;
+ if(w.status==='DRAFT'){
+  $('wpDirection').value=direction;$('wpDisposition').value=disposition;
+  $('wpReserve').value=first.reserve_movement;
+  $('wpExtra').value=JSON.stringify(suggested.slice(1).map(({review_hint,...x})=>x),null,2);
+ }
+}
+async function approveWorkpaperUI(id){
+ try{
+  const disposition=$('wpDisposition').value;
+  const adjustment={direction:$('wpDirection').value,disposition,amount:$('wpAmount').value,reserve_movement:$('wpReserve').value,legal_basis:$('wpBasis').value};
+  const extra=$('wpExtra').value.trim()?JSON.parse($('wpExtra').value):[];if(!Array.isArray(extra))throw Error('추가 조정 행은 JSON 배열이어야 합니다.');
+  if(!confirm('세무조정을 승인하고 유보 해당 행을 원장에 반영할까요? 승인 후 변경할 수 없습니다.'))return;
+  const result=await dbRequest('/api/workpapers/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,reviewer:$('wpReviewer').value,note:$('wpNote').value,acknowledge:$('wpAcknowledge').checked,adjustments:[adjustment,...extra]})});
+  notify('승인 완료. 유보원장 반영 '+result.reserve_posted+'건');await loadWorkpapersUI();showWorkpaperUI(id);await refreshClosingUI();
+ }catch(e){notify('승인 실패: '+e.message)}
+}
+async function cancelWorkpaperUI(id){
+ const reviewer=prompt('취소 담당자 이름');if(!reviewer)return;
+ const reason=prompt('취소·정정 사유(10자 이상)');if(!reason)return;
+ if(!confirm('승인을 취소하고 기존 유보 전기를 반대 부호로 상쇄할까요? 이력은 삭제되지 않습니다.'))return;
+ try{
+  const out=await dbRequest('/api/workpapers/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,reviewer,reason})});
+  notify('승인 취소 완료 · 유보 역분개 '+out.reversed_entries+'건. 검증표를 재생성하여 재승인하세요.');
+  await loadWorkpapersUI();showWorkpaperUI(id);await refreshClosingUI();
+ }catch(e){notify('승인 취소 실패: '+e.message)}
+}
+</script></body></html>
