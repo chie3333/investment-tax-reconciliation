@@ -383,14 +383,23 @@ function initKrxUI(){
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initKrxUI);else initKrxUI();
 </script>
 <script>
+function reserveItemLabel(key){
+ const [assetId,adjustmentKey='']=String(key).split('|');
+ const asset=getAsset(assetId);
+ const match=adjustmentKey.match(/^(.+)_(TRADE|VALUATION)$/);
+ const name=asset?.asset_name||`미등록 종목 #${assetId}`;
+ const classification=match?.[1]||asset?.classification||'분류 미확인';
+ const category=match?.[2]==='TRADE'?'처분 등 거래 관련':match?.[2]==='VALUATION'?'평가 관련':'기타 유보항목';
+ return esc(`${name} · ${classification} · ${category}`);
+}
 async function refreshClosingUI(){
  try{const year=Number(document.getElementById('validateYear').value);if(!year)throw Error('사업연도를 입력하세요.');
  const out=await dbRequest('/api/closing/summary?year='+year);
  const keys=[...new Set([...Object.keys(out.opening),...Object.keys(out.movements),...Object.keys(out.ending)])];
- const rows=keys.map(k=>[esc(k),won(out.opening[k]||0),won(out.movements[k]||0),won(out.ending[k]||0)]);
+ const rows=keys.map(k=>[reserveItemLabel(k),won(out.opening[k]||0),won(out.movements[k]||0),won(out.ending[k]||0)]);
  const positions=calculation(fiscalEndDate(year)).positions;
  const compare=positions.map(p=>{const aid=String(p.asset.id),actual=Object.entries(out.ending).filter(([k])=>k.split('|')[0]===aid).reduce((n,[,v])=>n+Number(v),0),expected=p.tax-p.book,diff=actual-expected;return [esc(p.asset.asset_name),esc(p.asset.classification),won(expected),won(actual),won(diff),Math.abs(diff)<0.005?'일치':'불일치'];});
- document.getElementById('closingResult').innerHTML='<b>'+year+' 사업연도</b> · '+(out.close?'확정됨':'미확정')+' · 직전 결산 '+(out.prior_closed?'확정':'미확정')+table(['자산|유보항목','기초','당기 증감','기말'],rows)+'<h4>기말 유보 자동 대사 (회계·세무 장부금액 기준)</h4>'+table(['종목','분류','세무−회계','승인 유보잔액','차이','검증'],compare)+'<p class="hint">FVOCI 처분의 환입은 검증표에서 담당자가 확인해야 합니다. 차이가 있으면 결산 확정이 차단됩니다.</p>';
+ document.getElementById('closingResult').innerHTML='<b>'+year+' 사업연도</b> · '+(out.close?'확정됨':'미확정')+' · 직전 결산 '+(out.prior_closed?'확정':'미확정')+table(['종목 · 분류 · 유보항목','기초','당기 증감','기말'],rows)+'<h4>기말 유보 자동 대사 (회계·세무 장부금액 기준)</h4>'+table(['종목','분류','세무−회계','승인 유보잔액','차이','검증'],compare)+'<p class="hint">거래 관련 항목에는 처분뿐 아니라 매수에 따른 세무원가 배분 변동도 포함될 수 있습니다. FVOCI 처분의 환입은 검증표에서 담당자가 확인해야 합니다. 차이가 있으면 결산 확정이 차단됩니다.</p>';
  }catch(e){document.getElementById('closingResult').textContent='조회 실패: '+e.message}
 }
 async function closeYearUI(){
