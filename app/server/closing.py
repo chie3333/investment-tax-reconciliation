@@ -196,6 +196,11 @@ def guard_state_changes(before,after,connection=None):
         query=("SELECT y.fiscal_year FROM fiscal_closes z JOIN fiscal_years y ON y.fiscal_year_id=z.fiscal_year_id" if is_normalized(connection) else "SELECT fiscal_year FROM fiscal_closes")
         closed=[r[0] for r in connection.execute(query)] if closed else []
     if not closed:return
+    from .rounding import policy
+    if before.get('roundingPolicy')!=after.get('roundingPolicy'):
+        starts=[p['effectiveYear'] for p in (policy(before),policy(after)) if p]
+        if any(y<=max(closed) for y in starts):
+            raise ValueError('확정 결산에 영향을 주는 반올림 정책 변경은 차단됩니다.')
     month=int(before.get('fiscalEndMonth') or 12)
     if after.get('fiscalEndMonth',12)!=month:raise ValueError('확정된 결산이 있어 결산월을 변경할 수 없습니다.')
     for name in ('trades','valuations','adjustments'):

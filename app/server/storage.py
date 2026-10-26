@@ -77,7 +77,7 @@ def _records(state):
     for name in ('taxBasis', 'stockPolicies'):
         for key, value in (state.get(name) or {}).items():
             out[(name, str(key))] = value
-    for name in ('taxPolicy', 'fiscalEndMonth', 'fvociPolicy', 'taxAdjustmentScope', 'ids'):
+    for name in ('taxPolicy', 'fiscalEndMonth', 'fvociPolicy', 'taxAdjustmentScope', 'ids', 'roundingPolicy'):
         out[('settings', name)] = state.get(name)
     return out
 
@@ -94,6 +94,8 @@ def save_state(state, expected_revision):
         raise ValueError('세무조정 적용범위는 객체여야 합니다.')
     from .fvoci_policy import policy_schedule
     policy_schedule(state)
+    from .rounding import policy
+    policy(state)
     now = datetime.now(timezone.utc).isoformat()
     with LOCK, connect() as conn:
         conn.execute('BEGIN IMMEDIATE')

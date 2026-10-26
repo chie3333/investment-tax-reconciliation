@@ -5,7 +5,6 @@
  else root.InvestmentEngine=api;
 })(globalThis,function(){
 'use strict';
-const roundW=n=>Math.sign(n)*Math.round((Math.abs(n)+Number.EPSILON*Math.max(1,Math.abs(n))*8)*100)/100||0;
 function fiscalYear(date,endMonth=12){const [y,m]=date.slice(0,7).split('-').map(Number);return String(y+(m>Number(endMonth)?1:0));}
 function fiscalEndDate(year,endMonth=12){return year+'-'+String(endMonth).padStart(2,'0')+'-'+String(new Date(Number(year),endMonth,0).getDate()).padStart(2,'0');}
 const apiFiscalYear=fiscalYear;
@@ -25,228 +24,198 @@ function fvociPolicySchedule(db){
 }
 function resolveFvociPolicy(schedule,year){return schedule.rows.filter(r=>r.effectiveYear<=Number(year)).at(-1)?.disposal||schedule.baseline;}
 function fvociPolicyForYear(db,year){return resolveFvociPolicy(fvociPolicySchedule(db),year);}
-function calculate(db,asOf='9999-12-31',options={}){
- const policySchedule=fvociPolicySchedule(db);
- const fiscalYear=date=>apiFiscalYear(date,db.fiscalEndMonth||12);
- const selectedAccountingMethod=options.accountingMethod||(code=>{
-  const method=db.stockPolicies?.[code]?.book;
-  return ['TOTAL','MOVING','FIFO','SPECIFIC'].includes(method)?method:'TOTAL';
- });
- const selectedTaxMethod=options.taxMethod||((code,year)=>{
-  const rows=(db.taxPolicyYears||[]).filter(p=>Number(p.effectiveYear)<=Number(year)).sort((a,b)=>Number(b.effectiveYear)-Number(a.effectiveYear));
-  const p=rows[0]||db.taxPolicy||{};
-  return p.filingStatus==='NOT_FILED'?'TOTAL':(['TOTAL','MOVING'].includes(p.method)?p.method:'TOTAL');
- });
-
- const ledger=[],positions=[];
- // Annual weighted-average pool: beginning-of-year tax/book cost + all purchases
- // within that calendar year.  For the annual total average, future purchases
- // change the year's earlier sale basis (provisional until year-end).
- function annualPools(events,method){
-  const pools=new Map();let carryQ=0,carryCost=0;
-  const years=[...new Set(events.map(e=>fiscalYear(e.date)))].sort();
-  for(const year of years){
-   const yr=events.filter(e=>fiscalYear(e.date)===year);
-   const buys=yr.filter(e=>e.kind==='trade'&&e.type==='BUY');
-   const sells=yr.filter(e=>e.kind==='trade'&&e.type==='SELL');
-   const buyQ=buys.reduce((v,e)=>v+e.qty,0),buyCost=buys.reduce((v,e)=>v+e.amount,0);
-   const unit=(carryQ+buyQ)>0?(carryCost+buyCost)/(carryQ+buyQ):0;
-   const soldQ=sells.reduce((v,e)=>v+e.qty,0);
-   pools.set(year,{unit,openingQ:carryQ,openingCost:carryCost});
-   carryQ=carryQ+buyQ-soldQ;
-   carryCost=(carryQ>0?carryQ*unit:0);
-  }
-  return pools;
+// BigInt rationals parse the decimal input text before any monetary arithmetic.
+const gcd=(a,b)=>{a=a<0n?-a:a;b=b<0n?-b:b;while(b){[a,b]=[b,a%b]}return a||1n};
+class Rational{
+ constructor(n=0n,d=1n){if(d===0n)throw Error('0으로 나눌 수 없습니다.');if(d<0n){n=-n;d=-d}const g=gcd(n,d);this.n=n/g;this.d=d/g;}
+ static from(value){
+  if(value instanceof Rational)return value;
+  if(typeof value==='boolean'||value==null)throw Error('수량·금액 형식 오류');
+  const m=String(value).match(/^([+-]?)(\d+)(?:\.(\d*))?(?:[eE]([+-]?\d+))?$/);
+  if(!m||String(value).length>128)throw Error('수량·금액 형식 오류');
+  const exp=Number(m[4]||0)-(m[3]||'').length;
+  if(Math.abs(exp)>300)throw Error('금액 범위 오류');
+  const n=BigInt((m[1]==='-'?'-':'')+m[2]+(m[3]||''));
+  return exp>=0?new Rational(n*10n**BigInt(exp)):new Rational(n,10n**BigInt(-exp));
  }
- // Tax basis is pooled by stock code, independently of accounting classification.
- // Same-date transactions use date and trade ID order; annual TOTAL uses all buys
- // in the calendar year and the carried-forward tax basis from the prior year.
- const pooledTaxCosts=new Map(), pooledTaxErrors=new Map();
- const stockCodes=[...new Set(db.assets.map(a=>a.stock_code))];
- for(const code of stockCodes){
-  const ids=new Set(db.assets.filter(a=>a.stock_code===code).map(a=>a.id));
-  const trades=db.trades.filter(t=>ids.has(t.assetId)&&['BUY','SELL'].includes(t.type)&&fiscalYear(t.date)<=fiscalYear(asOf))
-   .sort((x,y)=>x.date.localeCompare(y.date)||x.id-y.id);
-  let openingQty=0,openingCost=0;
-  for(const year of [...new Set(trades.map(t=>fiscalYear(t.date)))].sort()){
-   const yr=trades.filter(t=>fiscalYear(t.date)===year);
-   const method=selectedTaxMethod(code,year);
-   if(method==='TOTAL'){
-    const buys=yr.filter(t=>t.type==='BUY');
-    const totalQty=openingQty+buys.reduce((n,t)=>n+t.qty,0);
-    const totalCost=openingCost+buys.reduce((n,t)=>n+t.amount,0);
-    const unit=totalQty>0?totalCost/totalQty:0;
-    let available=openingQty;
-    for(const t of yr){
-     if(t.type==='BUY')available+=t.qty;
-     else if(t.qty>available+1e-9){pooledTaxErrors.set(t.id,'동일 종목 전체 보유수량을 초과한 처분');}
-     else {pooledTaxCosts.set(t.id,t.qty*unit);available-=t.qty;}
-    }
-    openingQty=available;openingCost=openingQty*unit;
-   }else{
-    for(const t of yr){
-     if(t.type==='BUY'){openingQty+=t.qty;openingCost+=t.amount;}
-     else if(t.qty>openingQty+1e-9){pooledTaxErrors.set(t.id,'동일 종목 전체 보유수량을 초과한 처분');}
-     else {const cost=openingQty>0?t.qty*openingCost/openingQty:0;pooledTaxCosts.set(t.id,cost);openingQty-=t.qty;openingCost-=cost;if(openingQty===0)openingCost=0;}
-    }
-   }
-  }
- }
+ add(v){v=Rational.from(v);return new Rational(this.n*v.d+v.n*this.d,this.d*v.d)}
+ sub(v){return this.add(Rational.from(v).neg())}
+ mul(v){v=Rational.from(v);return new Rational(this.n*v.n,this.d*v.d)}
+ div(v){v=Rational.from(v);return new Rational(this.n*v.d,this.d*v.n)}
+ neg(){return new Rational(-this.n,this.d)}
+ eq(v){v=Rational.from(v);return this.n===v.n&&this.d===v.d}
+ lt(v){v=Rational.from(v);return this.n*v.d<v.n*this.d}
+ round(scale=0){const factor=10n**BigInt(scale),n=this.n*factor,abs=n<0n?-n:n;const units=(abs*2n+this.d)/(this.d*2n);return new Rational(n<0n?-units:units,factor)}
+ text(scale=0){const r=this.round(scale),factor=10n**BigInt(scale),units=r.n*factor/r.d,abs=units<0n?-units:units;return (units<0n?'-':'')+(abs/factor)+(scale?'.'+String(abs%factor).padStart(scale,'0'):'')}
+ number(scale=0){const text=this.text(scale),n=Number(text);if(!Number.isFinite(n)||(scale===0&&!Number.isSafeInteger(n))||!Rational.from(n).eq(this.round(scale)))throw Error('화면의 정확한 금액 표현 범위를 초과했습니다.');return n||0}
+}
+const R=v=>Rational.from(v),zero=()=>R(0);
+function decimalProduct(left,right){
+ const value=R(left).mul(right);let denominator=value.d,twos=0,fives=0;
+ while(denominator%2n===0n){denominator/=2n;twos++}
+ while(denominator%5n===0n){denominator/=5n;fives++}
+ if(denominator!==1n)throw Error('십진 입력 곱셈 오류');
+ return value.text(Math.max(twos,fives));
+}
+const portion=(value,balance)=>{let v=R(value).round();const lo=balance.lt(0)?balance:zero(),hi=balance.lt(0)?zero():balance;return v.lt(lo)?lo:hi.lt(v)?hi:v};
+function roundingProfileForYear(state,year){
+ const p=state.roundingPolicy;
+ if(p!==undefined&&p!==null&&(!p||p.profile!=='KRW_WON_V1'||!Number.isInteger(p.effectiveYear)||p.effectiveYear<1900||p.effectiveYear>2200))throw Error('원 단위 반올림 정책·적용 시작 사업연도를 확인하세요.');
+ return p&&Number(year)>=p.effectiveYear?'KRW_WON_V1':'LEGACY_CENT_V1';
+}
+function calculateExact(db,asOf='9999-12-31',options={}){
+ const schedule=fvociPolicySchedule(db),month=db.fiscalEndMonth||12,fy=d=>fiscalYear(d,month);
+ const profile=y=>roundingProfileForYear(db,y),won=y=>profile(y)==='KRW_WON_V1';
+ const pub=(v,year)=>R(v).number(won(year)?0:2),post=(v,year)=>won(year)?R(v).round():R(v);
+ const taxMethod=(code,year)=>{
+  if(options.taxMethod)return options.taxMethod(code,String(year));
+  const p=[...(db.taxPolicyYears||[])].filter(p=>Number(p.effectiveYear)<=Number(year)).sort((a,b)=>Number(b.effectiveYear)-Number(a.effectiveYear))[0]||db.taxPolicy||{};
+  return p.filingStatus==='NOT_FILED'?'TOTAL':p.method||'TOTAL';
+ };
+ const bookMethod=code=>options.accountingMethod?options.accountingMethod(code):db.stockPolicies?.[code]?.book||'TOTAL';
+ const balances=new Map(),groups=new Map(),assets=new Map();
  for(const a of db.assets){
-  const accountingMethod=selectedAccountingMethod(a.stock_code);
-  let q=0,book=0,tax=0,oci=0,activeOCI=0,pl=0,dividend=0,reserve=0;
-  const allEvents=[...db.trades.filter(t=>t.assetId===a.id).map(t=>({...t,kind:'trade'})),...db.valuations.filter(v=>v.assetId===a.id).map(v=>({...v,kind:'valuation'}))].sort((x,y)=>x.date.localeCompare(y.date)||(x.kind==='trade'?0:1)-(y.kind==='trade'?0:1)||x.id-y.id);
-  const events=allEvents.filter(e=>e.date<=asOf);
-  // Include the full available year in annual-average calculation, even when
-  // the display is filtered to an earlier date within that year.
-  const poolEvents=allEvents.filter(e=>fiscalYear(e.date)<=fiscalYear(asOf));
-  const bookPools=accountingMethod==='TOTAL'?annualPools(poolEvents,'TOTAL'):null;
-  // Legacy per-asset tax pool (not used for disposal cost); pooledTaxCosts is authoritative.
-  // Compute annual tax total-average units with opening basis carried from
-  // the preceding year's selected method (including moving-average years).
-  const taxPools=new Map();let carryQ=0,carryCost=0;
-  for(const yr of [...new Set(poolEvents.map(e=>fiscalYear(e.date)))].sort()){
-   const method=selectedTaxMethod(a.stock_code,yr);
-   const yrTrades=poolEvents.filter(e=>e.kind==='trade'&&fiscalYear(e.date)===yr).sort((x,y)=>x.date.localeCompare(y.date)||x.id-y.id);
-   const buys=yrTrades.filter(e=>e.type==='BUY');
-   const buyQ=buys.reduce((v,e)=>v+e.qty,0),buyCost=buys.reduce((v,e)=>v+e.amount,0);
-   const unit=(carryQ+buyQ)>0?(carryCost+buyCost)/(carryQ+buyQ):0;
-   taxPools.set(yr,{unit,method});
-   if(method==='TOTAL'){
-    const soldQ=yrTrades.filter(e=>e.type==='SELL').reduce((v,e)=>v+e.qty,0);
-    carryQ+=buyQ-soldQ;carryCost=carryQ>0?carryQ*unit:0;
-   }else{
-    for(const e of yrTrades){if(e.type==='BUY'){carryQ+=e.qty;carryCost+=e.amount}
-     if(e.type==='SELL'&&carryQ>0){const c=e.qty*carryCost/carryQ;carryQ-=e.qty;carryCost-=c;if(carryQ===0)carryCost=0;}}
+  if(!Number.isSafeInteger(a.id)||a.id<=0||assets.has(a.id)||!['FVOCI','FVTPL'].includes(a.classification)||!a.stock_code)throw Error('자산 ID·종목·회계분류 오류');
+  assets.set(a.id,a);if(!groups.has(a.stock_code))groups.set(a.stock_code,[]);groups.get(a.stock_code).push(a.id);
+  balances.set(a.id,{qty:0,book:zero(),tax:zero(),reserve:zero(),oci:zero(),activeOCI:zero(),pl:zero(),dividend:zero(),exactBook:zero(),exactActiveOCI:zero()});
+ }
+ const events=[],trades=[],seen=new Set(),lots=new Map();
+ for(const [table,kind] of [['trades','trade'],['valuations','valuation']])for(const raw of db[table]||[]){
+  const e={...raw,kind},key=kind+':'+e.id;
+  if(!Number.isSafeInteger(e.id)||e.id<=0||seen.has(key)||!assets.has(e.assetId))throw Error('중복 원천 ID 또는 미등록 자산');
+  seen.add(key);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(e.date)||!Number.isFinite(Date.parse(e.date))||new Date(e.date).toISOString().slice(0,10)!==e.date)throw Error('거래·평가 날짜 오류');
+  if(kind==='trade'){
+   if(!['BUY','SELL','DIVIDEND'].includes(e.type))throw Error('거래 유형 오류');
+   e.amount=R(e.amount);if(e.amount.lt(0)||R('1e15').lt(e.amount))throw Error('거래금액 범위 오류');e.amount=post(e.amount,fy(e.date));
+   if(e.type!=='DIVIDEND'){
+    if(!Number.isSafeInteger(e.qty)||e.qty<=0)throw Error('양의 정수 수량이 필요합니다.');
+    if(Number(fy(e.date))<=Number(fy(asOf)))trades.push(e);
    }
-  }
-  let taxMovingQ=0,taxMovingCost=0,bookCostQ=0,bookCostBalance=0,bookLots=[];
-  for(const e of events){
-   const disposalPolicy=resolveFvociPolicy(policySchedule,fiscalYear(e.date));
-   let bookPL=0,taxPL=0,adj=0,classification=a.classification,desc='',direction='',reserveChange=0,deltaOCI=0,ociEquityTransfer=0,directEquityDisposal=0,ociTaxableCandidate=0,ociAdjustmentReview=false;
-   const oldBook=book,oldTax=tax,year=fiscalYear(e.date),taxMethod=selectedTaxMethod(a.stock_code,year);
-   if(e.kind==='trade'&&e.type==='BUY'){
-    if(!(e.qty>0)||e.amount<0){ledger.push({asset:a,date:e.date,desc:'입력 오류: 매수',error:true});continue}
-    q+=e.qty;book+=e.amount;tax+=e.amount;
-    bookCostQ+=e.qty;bookCostBalance+=e.amount;bookLots.push({id:e.id,qty:e.qty,unit:e.amount/e.qty});
-    taxMovingQ+=e.qty;taxMovingCost+=e.amount;
-    desc='매수 · 취득원가 증가';
-   }else if(e.kind==='trade'&&e.type==='SELL'){
-    if(!(e.qty>0)||e.qty>q){ledger.push({asset:a,date:e.date,desc:'오류: 보유수량 초과 매도',error:true});continue}
-    const proceeds=e.amount;
-    let accountingHistoricalCost=0;
-    if(accountingMethod==='TOTAL') accountingHistoricalCost=e.qty*(bookPools.get(year)?.unit||0);
-    else if(accountingMethod==='MOVING') accountingHistoricalCost=e.qty*(bookCostQ>0?bookCostBalance/bookCostQ:0);
-    else {
-     let remaining=e.qty;
-     let allocation=[];
-     if(accountingMethod==='SPECIFIC'){
-      allocation=Array.isArray(e.lotAllocation)?e.lotAllocation:[];
-      if(!allocation.length || Math.abs(allocation.reduce((v,x)=>v+Number(x.qty||0),0)-e.qty)>0.000001){ledger.push({asset:a,date:e.date,desc:'개별법: 매도 거래의 취득 LOT 배분이 누락되거나 수량이 일치하지 않습니다.',error:true});continue}
-     }else allocation=bookLots.map(l=>({id:l.id,qty:Math.min(remaining,Math.max(0,l.qty))})).filter(x=>{remaining-=x.qty;return x.qty>0});
-     if(allocation.some(x=>{const lot=bookLots.find(l=>l.id===Number(x.id));return !lot||Number(x.qty)<=0||Number(x.qty)>lot.qty;})){ledger.push({asset:a,date:e.date,desc:'개별법: 유효하지 않은 취득 LOT 배분입니다.',error:true});continue}
-     for(const x of allocation){const lot=bookLots.find(l=>l.id===Number(x.id));accountingHistoricalCost+=Number(x.qty)*lot.unit;lot.qty-=Number(x.qty)}
+  }else{e.price=R(e.price);if(e.price.lt(0)||R('1e15').lt(e.price))throw Error('평가가격 범위 오류');}
+  if(e.date<=asOf)events.push(e);
+ }
+ trades.sort((a,b)=>a.date.localeCompare(b.date)||a.id-b.id);
+ // Keep the existing historical-acquisition-cost explanation, separate from
+ // fair-value book removal and the company-wide tax pool.
+ const historicalCosts=new Map();
+ for(const a of assets.values()){
+  const source=trades.filter(e=>e.assetId===a.id),method=bookMethod(a.stock_code),lots=new Map();let qty=0,basis=zero();
+  for(const year of [...new Set(source.map(e=>fy(e.date)))].sort()){
+   const annual=source.filter(e=>fy(e.date)===year),buys=annual.filter(e=>e.type==='BUY'),totalQty=qty+buys.reduce((q,e)=>q+e.qty,0);
+   const unit=totalQty?buys.reduce((v,e)=>v.add(e.amount),basis).div(totalQty):zero();
+   for(const e of annual){
+    if(e.type==='BUY'){qty+=e.qty;basis=basis.add(e.amount);lots.set(e.id,{qty:e.qty,unit:e.amount.div(e.qty)});continue;}
+    if(e.qty>qty)throw Error('자산 보유수량 초과 매도');
+    let cost=zero();
+    if(method==='TOTAL')cost=unit.mul(e.qty);
+    else if(method==='MOVING')cost=basis.div(qty).mul(e.qty);
+    else{
+     let left=e.qty;
+     const allocations=method==='SPECIFIC'?(e.lotAllocation||[]):[...lots].map(([id,lot])=>{const q=Math.min(left,lot.qty);left-=q;return {id,qty:q}});
+     for(const allocation of allocations){const lot=lots.get(Number(allocation.id));if(!lot)continue;cost=cost.add(lot.unit.mul(allocation.qty));lot.qty-=Number(allocation.qty);}
     }
-    // The fair-value carrying amount removed is the fraction of the position
-    // being derecognized; this differs from historical acquisition cost.
-    const bookRemoved=book*(e.qty/q);
-    if(pooledTaxErrors.has(e.id)||!pooledTaxCosts.has(e.id)){ledger.push({asset:a,date:e.date,desc:'세법상 통합 원가계산 오류: '+(pooledTaxErrors.get(e.id)||'처분원가 없음'),error:true});continue}
-    const taxCost=pooledTaxCosts.get(e.id);
-    book-=bookRemoved;tax-=taxCost;q-=e.qty;
-    bookCostQ-=e.qty;bookCostBalance-=accountingHistoricalCost;
-    taxMovingQ-=e.qty;taxMovingCost-=taxCost;
-    if(q===0){book=0;tax=0;bookCostQ=0;bookCostBalance=0;taxMovingQ=0;taxMovingCost=0}
-    taxPL=proceeds-taxCost;
-    if(classification==='FVTPL')bookPL=proceeds-bookRemoved;
-    else {
-     // Remeasure the disposed shares to proceeds (assumed fair value, no fees).
-     // Include that final change in OCI before the within-equity transfer.
-     // Remaining shares retain their last explicitly supplied valuation.
-     const qtyBefore=q+e.qty;
-     const accumulatedOCIShare=qtyBefore>0?activeOCI*e.qty/qtyBefore:0;
-     deltaOCI=proceeds-bookRemoved;
-     ociEquityTransfer=disposalPolicy==='TRANSFER'?accumulatedOCIShare+deltaOCI:0;
-     directEquityDisposal=0;
-     oci+=deltaOCI-ociEquityTransfer;
-     activeOCI-=accumulatedOCIShare;
-     bookPL=0;
-     ociTaxableCandidate=taxPL;
-     ociAdjustmentReview=true;
-    }
-    // P/L-based taxable income bridge is not the same as reserve movement.
-    // FVOCI disposal's tax profit is a candidate taxable-income adjustment,
-    // subject to separate legal review and income-disposition approval.
-    adj=taxPL-bookPL;
-    reserveChange=(tax-book)-(oldTax-oldBook);
-    desc=`매도 · 회계 ${ {TOTAL:"총평균",MOVING:"이동평균",FIFO:"선입선출",SPECIFIC:"개별"}[accountingMethod]} 취득원가 ${roundW(accountingHistoricalCost)}원(참고), 회계 제거장부가 ${roundW(bookRemoved)}원, 세무 ${taxMethod==='TOTAL'?'총평균':'이동평균'} 처분원가 ${roundW(taxCost)}원`;
-   }else if(e.kind==='trade'&&e.type==='DIVIDEND'){
-    bookPL=e.amount;taxPL=e.amount;dividend+=e.amount;desc='배당수익 · 수입배당금 익금불산입 미적용';
-   }else if(e.kind==='valuation'){
-    const fair=q*e.price;
-    if(q===0){ledger.push({asset:a,date:e.date,desc:'오류: 보유수량 없는 평가',error:true});continue}
-    const gain=fair-book;book=fair;
-    if(classification==='FVTPL'){bookPL=gain;adj=-gain;desc='FVTPL 평가손익 · 세법상 평가 미인식 가정'}
-    else {deltaOCI=gain;oci+=gain;activeOCI+=gain;ociAdjustmentReview=true;desc='FVOCI 평가 · OCI 인식. 과세소득 조정·소득처분은 별도 검토'}
-    reserveChange=(tax-book)-(oldTax-oldBook);
+    historicalCosts.set(e.id,cost);basis=basis.sub(cost);qty-=e.qty;if(!qty)basis=zero();
    }
-   if(adj>0.005)direction='익금산입 / 손금불산입';else if(adj<-.005)direction='익금불산입 / 손금산입';
-   pl+=bookPL;reserve+=reserveChange;
-   ledger.push({asset:a,date:e.date,kind:e.kind,type:e.type||'VALUATION',desc,qty:q,book:roundW(book),tax:roundW(tax),bookPL:roundW(bookPL),taxPL:roundW(taxPL),ociChange:roundW(deltaOCI),adj:roundW(adj),reserveChange:roundW(reserveChange),reserve:roundW(reserve),direction,sourceId:e.id,ociEquityTransfer:roundW(ociEquityTransfer),directEquityDisposal:roundW(directEquityDisposal),ociTaxableCandidate:roundW(ociTaxableCandidate),ociAdjustmentReview});
+   if(method==='TOTAL')basis=unit.mul(qty);
   }
-  positions.push({asset:a,qty:q,book:roundW(book),tax:roundW(tax),oci:roundW(oci),activeOCI:roundW(activeOCI),retainedDisposalOCI:roundW(oci-activeOCI),fvociDisposalPolicy:resolveFvociPolicy(policySchedule,fiscalYear(asOf)),pl:roundW(pl),dividend:roundW(dividend),reserve:roundW(reserve)});
  }
- // Allocate at every successful event, rather than only at the final snapshot.
- // Allocation effects on other classifications are explicit, never tax profit.
- ledger.sort((a,b)=>a.date.localeCompare(b.date)||(a.kind==='trade'?0:1)-(b.kind==='trade'?0:1)||a.sourceId-b.sourceId||a.asset.id-b.asset.id);
- const balances=new Map(positions.map(p=>[p.asset.id,{qty:0,book:0,tax:0,reserve:0}]));
- const basis=new Map(stockCodes.map(code=>[code,0]));
- for(const row of ledger){
-  if(row.error)continue;
-  const code=row.asset.stock_code, state=balances.get(row.asset.id);
-  const source=(row.kind==='trade'?db.trades:db.valuations).find(e=>e.id===row.sourceId&&e.assetId===row.asset.id);
-  if(row.type==='BUY')basis.set(code,basis.get(code)+source.amount);
-  if(row.type==='SELL')basis.set(code,basis.get(code)-pooledTaxCosts.get(row.sourceId));
-  state.qty=row.qty;state.book=row.book;
-  const group=positions.filter(p=>p.asset.stock_code===code);
-  const held=group.filter(p=>balances.get(p.asset.id).qty>0);
-  const totalQty=held.reduce((n,p)=>n+balances.get(p.asset.id).qty,0);
-  const totalBasis=roundW(totalQty?basis.get(code):0);
-  let assigned=0;
-  row.allocationEffects=[];
-  for(const p of group){
-   const current=balances.get(p.asset.id),before=current.reserve;
-   const last=held.length&&p===held[held.length-1];
-   const allocated=!current.qty?0:last?roundW(totalBasis-assigned):roundW(totalBasis*current.qty/totalQty);
-   assigned=roundW(assigned+allocated);
-   current.tax=allocated;current.reserve=roundW(allocated-current.book);
-   const movement=roundW(current.reserve-before);
-   if(movement||p.asset.id===row.asset.id)row.allocationEffects.push({assetId:p.asset.id,tax:allocated,book:current.book,reserve:current.reserve,reserveChange:movement});
+ const costs=new Map();
+ for(const [code,ids] of groups){
+  const stock=trades.filter(e=>ids.includes(e.assetId));let qty=0,basis=zero(),posted=zero();
+  let previousWon=false;
+  for(const year of [...new Set(stock.map(e=>fy(e.date)))].sort()){
+   if(won(year)&&!previousWon){posted=posted.round(2);if(posted.d!==1n)throw Error('전기 소수 잔액의 원 단위 전환 대사가 필요합니다.');basis=posted;}
+   previousWon=won(year);
+   const annual=stock.filter(e=>fy(e.date)===year),buys=annual.filter(e=>e.type==='BUY'),method=taxMethod(code,year);
+   if(!['TOTAL','MOVING'].includes(method))throw Error('세무원가 정책 오류');
+   const totalQty=qty+buys.reduce((q,e)=>q+e.qty,0),totalBasis=buys.reduce((v,e)=>v.add(e.amount),basis),unit=totalQty?totalBasis.div(totalQty):zero();
+   if(!Number.isSafeInteger(totalQty))throw Error('수량이 화면의 정확한 정수 표현 범위를 초과했습니다.');
+   for(const e of annual){
+    if(e.type==='BUY'){qty+=e.qty;basis=basis.add(e.amount);posted=posted.add(e.amount)}
+    else{
+     if(e.qty>qty)throw Error('종목 통합 보유수량 초과 매도');
+     const exact=R(e.qty).mul(method==='TOTAL'?unit:basis.div(qty));
+     const future=buys.some(b=>b.date>e.date||(b.date===e.date&&b.id>e.id)),last=e.qty===qty&&(method==='MOVING'||!future);
+     const cost=won(year)&&last?posted:won(year)&&(!future||method==='MOVING')?portion(exact,posted):post(exact,year);
+     costs.set(e.id,cost);posted=posted.sub(cost);basis=basis.sub(exact);qty-=e.qty;
+    }
+   }
+   if(method==='TOTAL')basis=R(qty).mul(unit);
+   if(won(year))basis=posted;
+   if(!qty){basis=zero();posted=zero()}
   }
-  const current=balances.get(row.asset.id);
-  row.tax=current.tax;row.reserve=current.reserve;
-  row.reserveChange=row.allocationEffects.find(e=>e.assetId===row.asset.id).reserveChange;
  }
- for(const p of positions){
-  const current=balances.get(p.asset.id);
-  p.tax=current.tax;p.reserve=current.reserve;
-  p.taxAllocationMethod='POOLED_STOCK_PRO_RATA';
+ const stockBasis=new Map([...groups.keys()].map(k=>[k,zero()])),ledger=[];
+ let priorYear=null;
+ events.sort((a,b)=>a.date.localeCompare(b.date)||(a.kind==='valuation')-(b.kind==='valuation')||a.id-b.id);
+ for(const e of events){
+  const year=fy(e.date),a=assets.get(e.assetId),b=balances.get(e.assetId),code=a.stock_code,type=e.kind==='trade'?e.type:'VALUATION',policy=resolveFvociPolicy(schedule,year),isWon=won(year);
+  if(isWon&&priorYear!==year&&(priorYear===null||!won(priorYear))){
+   if([...balances.values()].some(v=>['book','tax','reserve','oci','activeOCI'].some(k=>v[k].d!==1n)))throw Error('전기 소수 잔액의 원 단위 전환 대사가 필요합니다.');
+   for(const [stock,ids] of groups)stockBasis.set(stock,ids.reduce((v,id)=>v.add(balances.get(id).tax),zero()));
+  }
+  priorYear=year;
+  let bookPL=zero(),taxPL=zero(),change=zero(),transfer=zero(),removed=zero(),taxCost=zero();
+  if(!lots.has(a.id))lots.set(a.id,new Map());const assetLots=lots.get(a.id);
+  if(type==='BUY'){
+   b.qty+=e.qty;b.book=b.book.add(e.amount);b.exactBook=b.exactBook.add(e.amount);stockBasis.set(code,stockBasis.get(code).add(e.amount));assetLots.set(e.id,e.qty);
+  }else if(type==='SELL'){
+   if(e.qty>b.qty)throw Error('자산 보유수량 초과 매도');
+   const method=bookMethod(code);if(!['TOTAL','MOVING','FIFO','SPECIFIC'].includes(method))throw Error('회계 원가배분 정책 오류');
+   if(method==='SPECIFIC'){
+    const used=new Map();for(const x of e.lotAllocation||[])used.set(Number(x.id),(used.get(Number(x.id))||0)+Number(x.qty));
+    if([...used.values()].reduce((x,y)=>x+y,0)!==e.qty||[...used].some(([id,q])=>!Number.isSafeInteger(q)||q<=0||q>(assetLots.get(id)||0)))throw Error('개별법 LOT 배분 오류');
+    for(const [id,q] of used)assetLots.set(id,assetLots.get(id)-q);
+   }else if(method==='FIFO'){let left=e.qty;for(const [id,q] of assetLots){const take=Math.min(left,q);assetLots.set(id,q-take);left-=take;}}
+   const part=R(e.qty).div(b.qty),exactRemoved=b.exactBook.mul(part);
+   removed=isWon?(e.qty===b.qty?b.book:portion(exactRemoved,b.book)):b.book.mul(part);b.exactBook=b.exactBook.sub(exactRemoved);
+   taxCost=costs.get(e.id);taxPL=e.amount.sub(taxCost);stockBasis.set(code,stockBasis.get(code).sub(taxCost));
+   if(a.classification==='FVOCI'){
+    const exactOCI=b.exactActiveOCI.mul(part),disposed=isWon?(e.qty===b.qty?b.activeOCI:portion(exactOCI,b.activeOCI)):b.activeOCI.mul(part);
+    b.exactActiveOCI=b.exactActiveOCI.sub(exactOCI);change=e.amount.sub(removed);transfer=policy==='TRANSFER'?disposed.add(change):zero();
+    b.activeOCI=b.activeOCI.sub(disposed);b.oci=b.oci.add(change).sub(transfer);
+   }else bookPL=e.amount.sub(removed);
+   b.qty-=e.qty;b.book=b.book.sub(removed);if(!b.qty)b.book=zero();
+  }else if(type==='DIVIDEND'){bookPL=e.amount;taxPL=e.amount;b.dividend=b.dividend.add(e.amount);}
+  else{
+   if(!b.qty)throw Error('보유수량 없는 평가');
+   const target=post(R(b.qty).mul(e.price),year),gain=target.sub(b.book);b.book=target;b.exactBook=target;
+   if(a.classification==='FVOCI'){change=gain;b.oci=b.oci.add(gain);b.activeOCI=b.activeOCI.add(gain);b.exactActiveOCI=b.exactActiveOCI.add(gain);}
+   else bookPL=gain;
+  }
+  b.pl=b.pl.add(bookPL);
+  const ids=groups.get(code),held=ids.filter(id=>balances.get(id).qty),totalQty=held.reduce((v,id)=>v+balances.get(id).qty,0),scale=isWon?0:2;
+  const total=held.length?stockBasis.get(code).round(scale):zero();let assigned=zero();const effects=[];
+  for(const id of ids){
+   const current=balances.get(id),before=current.reserve;
+   let allocated=id===held.at(-1)?total.sub(assigned):current.qty?total.mul(current.qty).div(totalQty).round(scale):zero();
+   if(isWon&&!total.lt(0)){if(allocated.lt(0))allocated=zero();if(total.sub(assigned).lt(allocated))allocated=total.sub(assigned);}
+   assigned=assigned.add(allocated);
+   current.tax=allocated;current.reserve=allocated.sub(current.book.round(scale));const movement=current.reserve.sub(before);
+   if(!movement.eq(0)||id===a.id)effects.push({assetId:id,tax:pub(allocated,year),book:pub(current.book,year),reserve:pub(current.reserve,year),reserveChange:pub(movement,year)});
+  }
+  const own=effects.find(x=>x.assetId===a.id),adj=taxPL.sub(bookPL);
+  ledger.push({asset:a,date:e.date,kind:e.kind,type,desc:type==='SELL'?`매도 · 회계 ${{TOTAL:'총평균',MOVING:'이동평균',FIFO:'선입선출',SPECIFIC:'개별'}[bookMethod(code)]} 취득원가 ${pub(historicalCosts.get(e.id),year)}원(참고), 회계 제거장부가 ${pub(removed,year)}원, 세무 처분원가 ${pub(taxCost,year)}원`:type==='BUY'?'매수 · 취득원가 증가':type==='DIVIDEND'?'배당수익':`${a.classification} 평가`,
+   qty:b.qty,book:own.book,tax:own.tax,bookPL:pub(bookPL,year),taxPL:pub(taxPL,year),ociChange:pub(change,year),adj:pub(adj,year),reserveChange:own.reserveChange,reserve:own.reserve,
+   sourceId:e.id,ociEquityTransfer:pub(transfer,year),directEquityDisposal:0,ociTaxableCandidate:a.classification==='FVOCI'&&type==='SELL'?pub(taxPL,year):0,
+   ociAdjustmentReview:a.classification==='FVOCI'&&['SELL','VALUATION'].includes(type),allocationEffects:effects,
+   direction:adj.lt(0)?'익금불산입 / 손금산입':adj.eq(0)?'':'익금산입 / 손금불산입',
+   ...(a.classification==='FVOCI'?{ociTaxBridge:type==='SELL'?pub(taxPL,year):0,ociTaxBridgeNote:'FVOCI: 법령·소득처분 검토 필요',ociRecycling:false,fvociDisposalPolicy:policy,taxDisposition:'REVIEW_REQUIRED'}:{})});
  }
- // Taxable-income adjustment, OCI changes, and reserve rollforward are
- // separate dimensions. Never automatically label a bridge as '기타' or '유보'.
- for(const row of ledger){
-  if(row.asset.classification!=='FVOCI'||row.error)continue;
-  row.ociTaxBridge=row.type==='SELL'?row.taxPL:0;
-  row.ociTaxBridgeNote=row.type==='SELL'?'FVOCI 처분: 세법상 처분손익의 과세소득 반영·소득처분 검토 필요':
-    row.type==='VALUATION'?'FVOCI 평가: OCI 변동은 당기손익 아님. 자본·세무기준 차이 검토 필요':'';
-  row.ociRecycling=false;
-  row.fvociDisposalPolicy=resolveFvociPolicy(policySchedule,fiscalYear(row.date));
-  row.taxDisposition='REVIEW_REQUIRED';
- }
- const reconciliation=stockCodes.map(code=>{
-  const ps=positions.filter(p=>p.asset.stock_code===code);
-  return {stock_code:code,qty:roundW(ps.reduce((n,p)=>n+p.qty,0)),book:roundW(ps.reduce((n,p)=>n+p.book,0)),tax:roundW(ps.reduce((n,p)=>n+p.tax,0)),reserve:roundW(ps.reduce((n,p)=>n+p.reserve,0)),fiscalYear:fiscalYear(asOf)};
+ const year=fy(asOf),positions=[...assets.values()].map(a=>{
+  const b=balances.get(a.id),out={asset:a,qty:b.qty};
+  for(const key of ['book','tax','reserve','oci','activeOCI','pl','dividend'])out[key]=pub(b[key],year);
+  out.retainedDisposalOCI=pub(b.oci.sub(b.activeOCI),year);out.fvociDisposalPolicy=resolveFvociPolicy(schedule,year);out.taxAllocationMethod='POOLED_STOCK_PRO_RATA';return out;
  });
+ const reconciliation=[...groups].map(([code,ids])=>({stock_code:code,qty:ids.reduce((v,id)=>v+balances.get(id).qty,0),
+  ...Object.fromEntries(['book','tax','reserve'].map(k=>[k,pub(ids.reduce((v,id)=>v.add(balances.get(id)[k].round(won(year)?0:2)),zero()),year)])),fiscalYear:year}));
  return {positions,ledger,reconciliation};
+}
+function calculate(db,asOf='9999-12-31',options={}){
+ fvociPolicySchedule(db);roundingProfileForYear(db,Number(fiscalYear(asOf,db.fiscalEndMonth||12)));
+ try{return calculateExact(db,asOf,options)}
+ catch(error){return {positions:[],ledger:[{error:true,desc:error.message,asset:{id:0,asset_name:'계산 오류',stock_code:'',classification:''},date:asOf,type:'ERROR',sourceId:0}],reconciliation:[]}}
 }
 
 function workpaperCandidates(state,year){
@@ -263,5 +232,5 @@ function workpaperCandidates(state,year){
   }));
 }
 
-return Object.freeze({calculate,fiscalYear,fiscalEndDate,workpaperCandidates,fvociPolicyForYear});
+return Object.freeze({calculate,fiscalYear,fiscalEndDate,workpaperCandidates,fvociPolicyForYear,roundingProfileForYear,roundWon:value=>R(value).number(0),decimalProduct});
 });

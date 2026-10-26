@@ -26,6 +26,9 @@ def validate(state, year, calculated=None):
     month=int(state.get('fiscalEndMonth') or 12)
     if not 1 <= month <= 12: raise ValueError('결산월이 올바르지 않습니다.')
     end=year_end(int(year),month)
+    from .rounding import profile_for_year,WON
+    won=profile_for_year(state,year)==WON
+    tolerance=Decimal(0) if won else Decimal(1)
     assets={str(a.get('id')):a for a in state.get('assets',[])}
     trades=sorted(state.get('trades',[]),key=lambda t:(t.get('date',''),int(t.get('id') or 0)))
     balances=defaultdict(Decimal); by_stock=defaultdict(Decimal)
@@ -97,30 +100,32 @@ def validate(state, year, calculated=None):
         for j in calculated.get('journals',[]):
             debit=sum((D(x.get('debit')) for x in j.get('lines',[])),Decimal(0))
             credit=sum((D(x.get('credit')) for x in j.get('lines',[])),Decimal(0))
-            if not debit.is_finite() or not credit.is_finite() or abs(debit-credit)>Decimal('1'):
+            if not debit.is_finite() or not credit.is_finite() or abs(debit-credit)>tolerance:
                 add('JRN_UNBALANCED','ERROR','분개 차대 불일치','분개의 차변·대변 합계가 일치하지 않습니다.',j.get('id'),debit,credit)
         if 'journals' not in calculated:add('JRN_UNVERIFIED','WARNING','분개 대사 미검증','계산 엔진에서 분개 내역을 제공하지 않아 차대 대사를 수행하지 못했습니다.',year)
         for stock in calculated.get('stockPools',[]):
             stock_id=stock.get('stock_code')
             allocated=sum((D(x.get('tax')) for x in pos if assets.get(str(x.get('assetId')),{}).get('stock_code')==stock_id),Decimal(0))
             pooled=D(stock.get('tax'))
-            if allocated.is_finite() and pooled.is_finite() and abs(allocated-pooled)>Decimal('1'):
+            if allocated.is_finite() and pooled.is_finite() and abs(allocated-pooled)>tolerance:
                 add('REC_STOCK_TAX_POOL','ERROR','종목 통합 세무원가 배분 불일치','회계분류별 배분 세무원가 합계와 종목 통합 세무원가가 다릅니다.',stock_id,pooled,allocated)
         if 'stockPools' not in calculated:add('REC_STOCK_POOL_UNVERIFIED','WARNING','통합 세무원가 대사 미검증','종목별 독립 통합원가 총액이 제공되지 않아 배분 합계를 검증하지 못했습니다.',year)
 
         for p in pos:
             aid=str(p.get('assetId')); q=D(p.get('qty')); book=D(p.get('book')); tax=D(p.get('tax')); reserve=D(p.get('reserve'))
             if aid not in assets:continue
+            if won and any(x.is_finite() and x!=x.to_integral_value() for x in (book,tax,reserve,D(p.get('oci')),D(p.get('activeOCI')),D(p.get('retainedDisposalOCI')))):
+                add('REC_WON_INTEGER','ERROR','원 단위 금액 오류','확정 잔액은 정수 원이어야 합니다.',aid)
             if q!=balances[aid]:add('REC_QTY','ERROR','계산원장 수량 대사 실패','계산 엔진 수량과 거래원장 수량이 다릅니다.',aid,balances[aid],q)
-            if all(x.is_finite() for x in (book,tax,reserve)) and abs((tax-book)-reserve)>Decimal('1'):add('REC_RESERVE','ERROR','회계·세무 장부금액 대사 실패','세무상 장부금액 − 회계상 장부금액이 계산 유보잔액과 다릅니다.',aid,tax-book,reserve)
-            if q==0 and any(abs(x)>Decimal('1') for x in (book,tax,reserve) if x.is_finite()):add('REC_CLOSED','ERROR','전량 처분 잔액 오류','보유수량이 0인데 장부금액이나 유보잔액이 남아 있습니다.',aid)
+            if all(x.is_finite() for x in (book,tax,reserve)) and abs((tax-book)-reserve)>tolerance:add('REC_RESERVE','ERROR','회계·세무 장부금액 대사 실패','세무상 장부금액 − 회계상 장부금액이 계산 유보잔액과 다릅니다.',aid,tax-book,reserve)
+            if q==0 and any(abs(x)>tolerance for x in (book,tax,reserve) if x.is_finite()):add('REC_CLOSED','ERROR','전량 처분 잔액 오류','보유수량이 0인데 장부금액이나 유보잔액이 남아 있습니다.',aid)
         # Manual reserve is not necessarily equivalent to computed temporary differences.
         manual=state.get('adjustments',[])
         for aid in assets:
             previous=sum((D(x.get('reserve')) for x in manual if str(x.get('assetId'))==aid and x.get('date','')<=end.isoformat()),Decimal(0))
             if manual and any(str(x.get('assetId'))==aid for x in manual):
                 pp=next((x for x in pos if str(x.get('assetId'))==aid),None)
-                if pp and abs(previous-D(pp.get('reserve')))>Decimal('1'):
+                if pp and abs(previous-D(pp.get('reserve')))>tolerance:
                     add('RES_MANUAL_RECON','WARNING','수동 유보와 자동 계산 차이','수동 조정 누계와 자동 장부금액 차이를 검토해야 합니다. FVOCI의 OCI 관련 조정은 별도 검토 대상입니다.',aid,pp.get('reserve'),previous)
         if calculated.get('prior_reserves') is not None:
             for aid, prior in calculated['prior_reserves'].items():

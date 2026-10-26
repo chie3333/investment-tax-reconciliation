@@ -37,3 +37,6 @@ P0 FVOCI 검산은 `fvoci_reference.py`와 `tests/fixtures/fvoci_cases.json`을 
 - 일부 처분 및 전량 처분 시 대응 차이 해소
 - 수정 거래의 후속 사업연도 재계산
 - 계산 정책과 근거 법령의 적용 시점 추적
+## 원 단위 계산과 기존 검산의 구분
+
+이 폴더의 기존 FVTPL·FVOCI 참조 사례는 과거 계산 가정의 회귀 검증으로 보존합니다. 새 원 단위 정책의 고정 정답과 두 언어 대사는 [원 단위 처리 기준](../docs/ROUNDING_POLICY.md), `tests/fixtures/won_rounding.json`, `tests/python/test_won_rounding.py`를 참고하세요. Python은 Decimal 입력·Fraction 비례배분, JavaScript는 BigInt 분수로 독립 계산합니다.

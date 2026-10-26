@@ -45,6 +45,8 @@ def signed_total(rows):
 
 
 def build_plan(state, year, item):
+    from .rounding import profile_for_year,WON
+    is_won=profile_for_year(state,year)==WON
     scope = state.get('taxAdjustmentScope') or {}
     enforced = scope.get('enabled') is True and scope.get('year') == int(year)
     reasons = []
@@ -84,6 +86,7 @@ def build_plan(state, year, item):
                 reasons=reasons, rows=[], accounting=dict(book_pl=item['book_pl'], oci_change=item['oci_change'],
                 equity_transfer=item['oci_equity_transfer'], tax_pl=item['tax_pl']),
                 equity_transfer_tax_effect='0.00')
+    if is_won:plan.update(rounding_profile=WON,equity_transfer_tax_effect='0')
     if reasons:
         return plan
     rows = plan['rows']
@@ -95,7 +98,7 @@ def build_plan(state, year, item):
         rows.append(dict(rule_id=rule, label=label, asset_id=str(item['asset_id']),
                          direction=positive if value>0 else negative,
                          disposition=('유보' if value>0 else '△유보') if reserve else '기타',
-                         amount=format(abs(value),'.2f'), reserve_movement=format(value if reserve else Decimal(0),'.2f'),
+                         amount=format(abs(value),'.0f' if is_won else '.2f'), reserve_movement=format(value if reserve else Decimal(0),'.0f' if is_won else '.2f'),
                          legal_basis=f'{BASIS[basis]}; {BASIS["reserve"] if reserve else BASIS["capital"]}; {VERSION} 적용요건 검토 필요'))
 
     change = d(item['oci_change'])
@@ -121,6 +124,8 @@ def build_plan(state, year, item):
 def verify_adjustments(rows, item, plan):
     """Check income direction as well as signed reserve movements at approve/close."""
     for row in rows:
+        if plan.get('rounding_profile')=='KRW_WON_V1' and any(d(row.get(k,0))!=d(row.get(k,0)).to_integral_value() for k in ('amount','reserve_movement')):
+            raise ValueError('원 단위 정책의 조정 행에는 정수 원 금액이 필요합니다.')
         if row['disposition'] in ('유보','△유보'):
             sign = 1 if row['direction'] in ('익금산입','손금불산입') else -1
             if d(row['reserve_movement']) * sign <= 0:

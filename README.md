@@ -16,11 +16,12 @@
 
 ## 현재 구현된 기능
 
-2026-10-26 기준, 계산 검증·연도별 정책·정규화 DB 설계·생성·앱 연결 단계까지 완료했습니다. [완료 현황과 후속 과제](docs/IMPLEMENTATION_STATUS.md)에서 범위와 검증 결과를 확인할 수 있습니다.
+2026-10-26 기준, 계산 검증·연도별 정책·정규화 DB 설계·생성·앱 연결과 원 단위 반올림 단계까지 완료했습니다. [완료 현황과 후속 과제](docs/IMPLEMENTATION_STATUS.md)에서 범위와 검증 결과를 확인할 수 있습니다.
 
 | 영역 | 구현 내용 |
 |---|---|
 | 투자주식 관리 | 종목 마스터, FVOCI/FVTPL 보유자산, 매수·매도·배당, 평가 입력 |
+| 금액 정밀도 | 원 단위 반올림, 평균단가 정밀도 유지, 마지막 처분 잔여액 정리, 적용 시작 연도·과거 확정 보존 |
 | 회계·세무 계산 | 회계상 평가·처분손익, OCI 관련 계산, 세법상 총평균법/이동평균법 시뮬레이션 |
 | 세무원가 풀 | 동일 종목 FVOCI/FVTPL 통합 세무원가 계산, 기말 보유수량 기준 배분 및 대사 |
 | 사업연도 정책 | 결산월 설정, 사업연도별 원가계산 방법·신고/변경 이력 입력 |
@@ -115,6 +116,7 @@ node tests/js/test_fvoci_reserves.js
 node tests/js/test_reserve_labels.js
 node tests/js/test_tax_rule_ui.js
 node tests/js/test_fvoci_policy_years.js
+node tests/js/test_won_rounding.js
 ```
 
 테스트는 계산·검증·승인/취소의 일부 경로를 확인합니다. 브라우저 전체 업무 흐름, 실제 KRX API, 법인세 신고 결과에 대한 통합 테스트를 대체하지 않습니다.
@@ -139,7 +141,8 @@ node tests/js/test_fvoci_policy_years.js
 - [x] [2026 일반 국내 상장주식 복수 행 규칙](docs/TAX_ADJUSTMENT_RULES_2026.md): PL/OCI/자본 내 대체 구분, 16개 조건부 정답 × 두 정책의 승인·원장·결산 검증 (예외·혼합 분류 자동 적용 제외)
 - [x] [FVOCI 사업연도별 대체/유지 정책·변경 이력](docs/FVOCI_POLICY_YEARS.md), 확정 결산 보존·소급 수정 차단·12월/3월 결산 이월 검증 (과거 처분 유지분의 일괄 대체 제외)
 - [ ] 세법상 원가·소득처분·유보 환입의 법령/예외 요건을 사업연도별로 검증
-- [ ] Decimal 기반 원 단위 반올림·잔여액 배분 규칙 정립
+- [x] [원 단위 반올림·평균단가 정밀도·마지막 처분 잔여액](docs/ROUNDING_POLICY.md), BigInt/Decimal·Fraction 대사와 200개 경로 검증
+- [ ] 법정 신고서별 출력 단위·절사 기준 확인
 
 ### P1 — 승인·결산 통제
 

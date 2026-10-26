@@ -36,12 +36,15 @@ def context(c,year,revision=None):
 
 
 def store_calculation(c,state,calculated,revision,year):
+    from app.server.rounding import profile_for_year,ensure_profile,WON
+    profile=profile_for_year(state,year)
+    if profile==WON:ensure_profile(c)
     fy=repo.period(c,year,int(state.get('fiscalEndMonth') or 12))
     row=c.execute('SELECT run_id FROM calculation_runs WHERE company_id=? AND fiscal_year_id=? AND source_revision=? AND input_hash=? AND result_hash=?',
                   (repo.COMPANY,fy,revision,repo.digest(state),calculated['digest'])).fetchone()
     if row:return row[0],fy
     run=repo.insert(c,'calculation_runs',company_id=repo.COMPANY,fiscal_year_id=fy,as_of=calculated['as_of'],source_revision=revision,
-                    engine_version=calculated['engine_version'],rounding_profile_id='LEGACY_CENT_V1',inputs_json=repo.dumps(state),input_hash=repo.digest(state),
+                    engine_version=calculated['engine_version'],rounding_profile_id=profile,inputs_json=repo.dumps(state),input_hash=repo.digest(state),
                     result_hash=calculated['digest'],status='SUCCEEDED',created_at=repo.now())
     for p in calculated['positions']:
         repo.insert(c,'calculated_balances',company_id=repo.COMPANY,run_id=run,asset_id=p['assetId'],quantity=p['qty'],book_value=p['book'],tax_value=p['tax'],
