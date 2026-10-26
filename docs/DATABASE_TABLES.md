@@ -1,4 +1,4 @@
-# 보완 데이터베이스 테이블 정의서 — 설계안
+# 보완 데이터베이스 테이블 정의서 — 구현 기준 v2
 
 상태: **설계 기준·정규화 스키마 v2·신규 DB 앱 연결 완료** · 작성일: 2026-10-26 · 대응 그림: [보완 ERD](DATABASE_ERD.md)
 
@@ -6,11 +6,13 @@
 
 이 문서는 필드·관계·업무 통제의 기준이다. 실행 가능한 DDL은 `app/database/schema.sql`에 있다. 신규 DB에서는 원천·정책·계산·검증·승인·원장·결산을 연결했고, 기존 DB의 자료 이전은 수행하지 않았다. API 시세 캐시·다중 회사 선택·인증 등 남은 범위와 추가 열은 [구현 안내](DATABASE_SETUP.md)에 명시한다.
 
+**완료 범위:** 업무 테이블 28개와 관리 테이블 1개를 생성하고 원천·계산·승인·결산을 신규 DB 앱에 연결했다. `market_prices`는 시세 캐시 서비스 연결 전, `migration_id_map`은 자동 이전 도구 연결 전의 준비 구조다. [완료 현황](IMPLEMENTATION_STATUS.md)을 함께 본다.
+
 ## A. 공통 규약
 
 ### 자료형·표기
 
-| 표기 | 제안 의미 |
+| 표기 | 구현 의미 |
 |---|---|
 | `I` | SQLite INTEGER. ID·버전·수량·사업연도 등에 사용 |
 | `T` | SQLite TEXT. 문자열·ISO 날짜·UTC 저장 시각 |
@@ -47,13 +49,14 @@
 |---|---|---|
 | company_id | PK | 회사 내부 식별자 |
 | company_name | T | 회사명 또는 미확인 로컬 작업공간 명칭 |
+| settings_json | J | 추가 설정·입력 순서·마스터 목록·수동 원가 참고값. 거래·평가 원천 배열 제외 |
 | business_number | T? | 확인된 사업자번호. 최초 이전에서 임의 생성하지 않음 |
 | fiscal_end_month | I, 1~12 | 기본 결산월 |
 | source_revision | I, 0 이상 | 회사 원천·정책 저장 버전 |
 | status | T, ACTIVE/ARCHIVED | 보관 상태. 삭제와 구분 |
 | created_at / updated_at | T | 생성·갱신 시각 |
 
-결산월 변경은 기존 확정 연도의 기간을 바꾸지 못한다. 회사 보관 처리도 원천 삭제를 뜻하지 않는다.
+현재 앱은 사업연도 자료가 한 번 생성되면 결산월 변경을 차단한다. 기간을 다시 편성하는 기능은 미구현이다. 회사 보관 처리도 원천 삭제를 뜻하지 않는다.
 
 ### 2. `fiscal_years` — 사업연도
 
@@ -83,7 +86,7 @@ UQ `(company_id, fiscal_year)`. 같은 회사의 기간 겹침 금지, 시작일
 
 현재 코드 매핑에 대해 `(market_type, stock_code)` 부분 UQ를 둔다. 동일 코드의 과거 매핑·상장폐지 자료는 지우지 않는다. 코드 재사용과 시장 이전은 확인 후 동일 `stock_id` 유지 또는 별도 종목 생성 여부를 판단한다. 자동 이름 매칭으로 서로 다른 권리의 주식을 병합하지 않는다.
 
-### 4. `market_prices` — 필요한 날짜의 시세·정정 버전
+### 4. `market_prices` — 시세·정정 버전 (테이블 구현, 앱 캐시 미연결)
 
 | 열 | 형식·제약 | 내용 |
 |---|---|---|
@@ -107,6 +110,7 @@ UQ `(stock_id, price_date, provider, quote_revision)` 및 `(stock_id, price_date
 | company_id / stock_id | I, FK | 회사·공통 종목 |
 | classification | T, FVOCI/FVTPL | 회계분류 |
 | book_cost_method | T | TOTAL/MOVING/FIFO/SPECIFIC 등 현행 회계 원가 참고 정책 |
+| metadata_json | J | 자산명·기존 입력 추가 정보 |
 | status | T, ACTIVE/ARCHIVED | 사용 상태 |
 | created_at / updated_at | T | 관리 시각 |
 
@@ -151,19 +155,19 @@ UQ `(company_id, logical_key, version)`, 현재 버전은 `(company_id, logical_
 
 열: `policy_id PK`, `company_id I FK`, `effective_start_year I?`, `is_legacy_baseline B`, `method T(TOTAL/MOVING)`, `filing_status T`, `filing_date T?`, `receipt T?`, `change_status T`, `previous_method T?`, `reviewer T?`, `reason T?`, `evidence_json J?`, 공통 버전 열.
 
-신규 확인 정책은 확인자·사유 필수. 불완전한 과거 자료는 미확인 상태와 원문을 보존한다. 기존 공통 정책에만 시작연도 NULL과 `is_legacy_baseline=1`을 허용하고 과거 적용연도를 임의 생성하지 않는다. 현재 유효한 시작연도별 정책 및 회사별 공통 기준은 각각 부분 UQ. 분류별로 회사 세무방법을 달리 선택하는 구조로 만들지 않는다.
+연도별 세무원가 정책은 구조상 확인자·사유가 필요하다. 현재 UI가 근거만 제공하면 어댑터는 입력 근거 또는 로컬 사용자 표기를 사용하고 근거가 없으면 별도 검토 필요 문구를 저장하므로 법적 확인 완료로 해석하지 않는다. 불완전한 과거 자료는 미확인 상태와 원문을 보존한다. 기존 공통 정책에만 시작연도 NULL과 `is_legacy_baseline=1`을 허용하고 과거 적용연도를 임의 생성하지 않는다. 현재 유효한 시작연도별 정책 및 회사별 공통 기준은 각각 부분 UQ. 분류별로 회사 세무방법을 달리 선택하는 구조로 만들지 않는다.
 
 ### 9. `fvoci_policy_versions` — 사업연도별 OCI 처분 정책
 
-열: `policy_id PK`, `company_id I FK`, `effective_start_year I?`, `is_legacy_baseline B`, `disposal T(TRANSFER/RETAIN)`, `confirmation_status T(CONFIRMED/UNKNOWN)`, `reviewer T?`, `reason T?`, 공통 버전 열.
+열: `policy_id PK`, `company_id I FK`, `effective_start_year I?`, `is_legacy_baseline B`, `disposal T(TRANSFER/RETAIN)`, `confirmation_status T(CONFIRMED/UNKNOWN)`, `reviewer T?`, `reason T?`, `metadata_json J`, 공통 버전 열.
 
 신규 연도별 정책은 시작연도·확인자·사유 필수. 시작연도부터 다음 정책 전까지 상속하며 결산월에 따른 사업연도 종료연도로 판단한다. 공통 기준 및 시작연도별 현재 버전에 부분 UQ. 확정 결산까지 영향을 줄 수 있는 소급 추가·수정·VOID를 차단한다. 과거 처분 유지분 OCI의 일괄 대체는 생성하지 않는다. [현재 정책 보존 원칙](FVOCI_POLICY_YEARS.md)을 유지한다.
 
 ### 10. `company_rule_reviews` — 회사·연도별 자동 규칙 적용 검토
 
-열: `review_id PK`, `company_id I FK`, `fiscal_year_id I FK`, `rule_version T`, `enabled B`, `confirmed B`, `reviewer T?`, `reason T?`, `exclusions_json J`, `legal_sources_json J`, `checked_on T`, 공통 버전 열.
+열: `review_id PK`, `company_id I FK`, `fiscal_year_id I FK`, `rule_version T`, `enabled B`, `confirmed B`, `reviewer T?`, `reason T?`, `exclusions_json J`, `legal_sources_json J`, `checked_on T`, `metadata_json J`, 공통 버전 열.
 
-UQ `(company_id, fiscal_year_id, version)`, 해당 연도 현재 검토는 부분 UQ. 활성화된 확인에는 확인자·사유 필수이며 법령의 명칭·조문·시행본·열람일과 예외 확인을 보존한다. 미확인·예외는 적격 확인으로 변환하지 않는다. 확정 연도 근거 변경 금지. 법령 규칙의 실행 코드를 임의 문자열로 저장·실행하는 기능은 만들지 않는다.
+UQ `(company_id, fiscal_year_id, version)`, 해당 연도 현재 검토는 부분 UQ. 활성화된 확인에는 확인자·사유가 필요하며 적용범위·예외 원문을 보존한다. 현재 이 테이블의 `legal_sources_json`은 빈 배열로 저장하고, 실제 규칙·법령 근거는 검증표의 `rule_snapshot_json`과 승인 근거에 보존한다. 미확인·예외는 적격 확인으로 변환하지 않는다. 확정 연도 근거 변경 금지. 법령 규칙의 실행 코드를 임의 문자열로 저장·실행하는 기능은 만들지 않는다.
 
 ### 11. `rounding_profiles` — 계산 단위·금액 처리 버전
 
@@ -177,7 +181,7 @@ UQ `(company_id, fiscal_year_id, version)`, 해당 연도 현재 검토는 부�
 
 열: `run_id PK`, `company_id I FK`, `fiscal_year_id I FK`, `as_of T`, `source_revision I`, `engine_version T`, `rounding_profile_id T FK`, `inputs_json J`, `input_hash T`, `result_hash T?`, `status T(SUCCEEDED/FAILED)`, `error_json J?`, `created_at T`.
 
-완료 실행은 덮어쓰지 않는다. 입력은 당시 거래·평가의 특정 버전, 정책·규칙 및 기존 호환 설정을 고정한다. 최신 원천을 참조해 과거 입력을 대체하지 않는다. 재실행은 새 ID이며 동일 입력 식별값에 일반 인덱스를 두되 실행 이력을 잃는 전역 UQ를 강제하지 않는다. SUCCEEDED에는 결과 식별값이 필수다. 신규 검증과 승인은 성공한 실행만 참조한다. 원문만 있는 이전 실행에는 이 테이블에 새 엔진의 성공 근거를 꾸며 넣지 않으며, LEGACY 검증·검증표와 원문 보관으로 구분한다.
+완료 실행은 덮어쓰지 않는다. 입력은 당시 거래·평가의 특정 버전, 정책·규칙 및 기존 호환 설정을 고정한다. 최신 원천을 참조해 과거 입력을 대체하지 않는다. 현재 서비스는 회사·연도·원천 버전·입력 해시·결과 해시가 모두 같으면 기존 계산 실행을 재사용한다. 달라지면 새 실행을 추가한다. 검증 실행은 재검증할 때마다 별도 행을 남긴다. 동일 입력을 막는 전역 UQ는 두지 않는다. SUCCEEDED에는 결과 식별값이 필수다. 신규 검증과 승인은 성공한 실행만 참조한다. 원문만 있는 이전 실행에는 이 테이블에 새 엔진의 성공 근거를 꾸며 넣지 않으며, LEGACY 검증·검증표와 원문 보관으로 구분한다.
 
 ### 13. `calculated_balances` — 실행별 보유자산 잔액
 
@@ -193,7 +197,7 @@ UQ `(run_id, stock_id)`. 같은 회사·동일 권리의 종목별 세무원가�
 
 ### 15. `validation_runs` — 검증 실행
 
-열: `validation_id PK`, `company_id I`, `run_id I? FK`, `fiscal_year_id I FK`, `source_revision I`, `evidence_state T(VERIFIED/LEGACY)`, `summary_json J`, `issues_json J`, `created_at T`.
+열: `validation_id PK`, `company_id I`, `run_id I? FK`, `fiscal_year_id I FK`, `source_revision I`, `evidence_state T(VERIFIED/LEGACY)`, `summary_json J`, `issues_json J`, `result_json J`, `created_at T`.
 
 신규 VERIFIED 검증에는 계산 실행이 필수이며 회사·연도·원천 버전이 일치해야 한다. 이전 근거가 부족한 LEGACY 검증만 계산 연결에 NULL을 허용한다. 검증 결과를 수정하지 않으며 재검증은 새 행이다. 실패·경고 결과도 보존한다. 신규 결산은 지정한 성공 계산의 오류 없는 VERIFIED 검증과 경고 확인을 요구한다.
 
@@ -205,7 +209,7 @@ UQ `(company_id, fiscal_year_id, issue_code, source_ref)`. 현행 전역 `issue_
 
 ### 17. `issue_review_events` — 이슈 검토 이력
 
-열: `event_id PK`, `company_id I`, `issue_id I FK`, `validation_id I FK`, `previous_status T?`, `status T`, `actor T`, `reason T`, `created_at T`.
+열: `event_id PK`, `company_id I`, `fiscal_year_id I FK`, `issue_id I FK`, `validation_id I FK`, `previous_status T?`, `status T`, `actor T`, `reason T`, `created_at T`.
 
 추가 전용. 검토 상태 갱신과 이벤트 추가를 같은 트랜잭션에서 수행한다. 검토 완료 표시는 계산 오류를 덮어쓰거나 결산 차단을 해제하는 수단이 아니다.
 
@@ -267,6 +271,7 @@ UQ `(workpaper_id, row_no)`. 승인 전에는 초안 행을 편집하고 승인 
 |---|---|---|
 | entry_id | PK | 원장 행 ID |
 | company_id / fiscal_year_id / asset_id | I, 복합 FK | 회사·연도·대상 자산 |
+| workpaper_id | I, 복합 FK | 연결된 검증표 |
 | decision_id / adjustment_row_id | I, 복합 FK | 전기 또는 취소 결정·원래 조정 행 |
 | entry_type | T, POST/REVERSAL | 승인 전기·취소 역분개 |
 | reversal_of_entry_id | I?, FK self | 역분개 대상 원본 행 |
@@ -299,13 +304,13 @@ LEGACY 확정은 실제 기존 근거를 그대로 보존하고 없는 계산·�
 
 원천 저장과 같은 트랜잭션에서 추가한다. 현재 로그에 기록된 actor는 로컬 사용자 표기일 수 있으며 인증된 사용자 ID로 오해하지 않는다. 파일 소유자의 직접 SQL 조작까지 막는 구조는 아니다. 기존 로그의 action 명칭·시각·원문은 변환 과정에서 보관한다.
 
-### 26. `legacy_archives` — 기존 자료의 읽기 전용 원문
+### 26. `legacy_archives` — 수동 조정 원문·향후 이전 자료 보관
 
 열: `archive_id PK`, `company_id I FK`, `source_revision I?`, `backup_hash T`, `source_table T`, `source_key T`, `payload_json J`, `archived_at T`.
 
-UQ `(backup_hash, source_table, source_key)`. 원본 SQLite 파일은 별도 백업으로 보존하고 이 테이블에는 작업공간 JSON과 기존 업무 테이블 행의 원문을 남긴다. 해시만 저장하고 원문을 버리는 구조가 아니다. 예전 근거에 없던 정책 확인·계산 성공·승인자를 새로 꾸며 넣지 않는다.
+UQ `(backup_hash, source_table, source_key)`. 현재 앱은 수동 조정 원문을 저장하며 `backup_hash`는 저장 버전·키·원문의 식별값이다. 원본 DB 전체 백업 해시는 아직 자동 수집하지 않는다. 아래 전체 DB 원문 보관은 향후 이전 도구의 기준이다. 원본 SQLite 파일은 별도 백업으로 보존하고 이 테이블에는 작업공간 JSON과 기존 업무 테이블 행의 원문을 남긴다. 해시만 저장하고 원문을 버리는 구조가 아니다. 예전 근거에 없던 정책 확인·계산 성공·승인자를 새로 꾸며 넣지 않는다.
 
-### 27. `migration_id_map` — 기존 ID와 새 ID 대응
+### 27. `migration_id_map` — 기존 ID와 새 ID 대응 (구조 준비, 이전 도구 미구현)
 
 열: `map_id PK`, `archive_id I FK`, `company_id I FK`, `source_entity T`, `source_key T`, `target_table T?`, `target_key T?`, `mapping_state T(MAPPED/REVIEW_REQUIRED)`, `note T?`, `created_at T`.
 
@@ -313,21 +318,25 @@ MAPPED에는 대상 테이블·키 필수이며 UQ `(archive_id, source_entity, 
 
 ### 28. `legacy_manual_adjustments` — 이전 수동 조정 원문
 
-열: `legacy_adjustment_id PK`, `company_id I FK`, `archive_id I FK`, `legacy_key T`, `asset_id I? FK`, `date T?`, `payload_json J`, `mapping_state T(MAPPED/REVIEW_REQUIRED)`, `created_at T`.
+열: `legacy_adjustment_id PK`, `company_id I FK`, `archive_id I FK`, `legacy_key T`, `asset_id I? FK`, `date T?`, `payload_json J`, `mapping_state T(MAPPED/REVIEW_REQUIRED)`, `created_at T`, `is_current B`, `status T(ACTIVE/VOID)`.
 
-UQ `(company_id, archive_id, legacy_key)`. 기존 `workspace.payload.adjustments`를 보존한다. 승인된 세무조정 행·유보 전기로 임의 변환하지 않는다. 연결되지 않는 원천이나 과거 잔액에 영향을 주는 항목은 검토 대상으로 남기고 운영 전환을 차단한다. 읽기 전용 이전 자료 화면과 계산 입력 어댑터에서 어떻게 취급할지 개별 대사 후 결정한다.
+UQ `(company_id, archive_id, legacy_key)`. 기존 `workspace.payload.adjustments`를 보존한다. 승인된 세무조정 행·유보 전기로 임의 변환하지 않는다. 연결되지 않는 원천이나 과거 잔액에 영향을 주는 항목은 검토 대상으로 남기고 운영 전환을 차단한다. 현재 저장 어댑터는 화면의 `adjustments`를 원문 보존용으로 왕복 저장하고 정정 시 새 이력을 추가한다. 별도 읽기 전용 이전 자료 화면과 자동 이전은 아직 없다.
 
-## H. 필수 인덱스와 상태 통제
+### 관리 테이블. `schema_metadata` — 생성 버전과 구조 식별값
 
-| 조회·통제 목적 | 제안 인덱스 또는 검증 |
+업무 테이블 28개와 별도로 둔다. 열은 `id I PK(CHECK id=1)`, `schema_version I`, `ddl_hash T`, `object_hash T`, `created_at T`다. 생성 시 1행을 기록하고 수정·삭제하지 않는다. 읽기 전용 검사에서 실제 스키마 객체 해시와 비교한다. 파일 변조 방지를 위한 전자서명은 아니다.
+
+## H. 구현한 인덱스와 상태 통제
+
+| 조회·통제 목적 | 구현 인덱스 또는 서비스 검증 |
 |---|---|
-| 종목 검색 | 종목코드·명칭 검색용 인덱스. 검색 방식별 성능 확인 후 확정 |
+| 종목 검색 | 현재 시장·종목코드 부분 UQ와 종목명 인덱스 |
 | 특정 날짜 시세 | `(stock_id, price_date, provider, quote_revision)` |
 | 거래·평가 순서 | `(company_id, asset_id, trade_date, trade_id)` 및 평가 대응 키 |
 | 정책 상속 | 회사·시작연도·현재 버전 부분 인덱스 |
 | 원천 최신 버전 | 회사·논리키의 현재 행 부분 UQ |
-| 계산·검증 이력 | 회사·연도·원천 버전·생성 시각 |
-| 미승인 검증표 | 회사·연도·상태·원천 식별자 |
+| 계산·검증 이력 | 계산 조회용 회사·연도·원천 버전·생성 시각 인덱스; 검증은 FK·PK로 연결 |
+| 미승인 검증표 | 회사·연도·상태 인덱스와 원천별 회차 부분 UQ |
 | 승인 중복 방지 | 회차당 승인 한 건, 승인당 취소 한 건 |
 | 원장 전기·역분개 | 결정·조정 행 UQ, 역분개 대상 부분 UQ |
 | 원장 집계 | 회사·연도·자산·유보 항목 |
@@ -335,7 +344,7 @@ UQ `(company_id, archive_id, legacy_key)`. 기존 `workspace.payload.adjustments
 
 원장·결산 금액 합계, 조정행 방향·처분, 이전 확정 잔액과 차기 기초, 정책 적용·확정 잠금은 승인·결산 트랜잭션에서도 재검사한다. 조회 인덱스는 검증을 대신하지 않는다.
 
-## I. 기존 자료와의 대응
+## I. 향후 기존 DB 이전 시 대응 기준 — 자동 이전 미구현
 
 | 현재 자료 | 제안 대상·주의 |
 |---|---|
@@ -353,7 +362,7 @@ UQ `(company_id, archive_id, legacy_key)`. 기존 `workspace.payload.adjustments
 | fiscal_closes·closing_events | 금액·시각·확정자·원문 근거 보존. 새 규칙으로 재확정하지 않음 |
 | 기존 audit_log | 원문 보존 및 새 회사 경계에 매핑. 과거 로그를 삭제하거나 인증 이력으로 승격하지 않음 |
 
-## J. 전환 전 필수 검증
+## J. 향후 기존 DB 이전 전 필수 검증
 
 1. 원본 DB·JSON 백업과 버전·해시를 확보하고 복구를 시험한다.
 2. 원천 종류별 건수·논리 ID·버전·날짜·수량·금액·누락 항목을 비교한다.
@@ -364,4 +373,4 @@ UQ `(company_id, archive_id, legacy_key)`. 기존 `workspace.payload.adjustments
 7. 외래키 무결성, 중복 원천, 다른 회사·연도 연결, 동시 저장 충돌, 실패 시 롤백을 검사한다.
 8. LEGACY 자료는 원문 보존과 새 기능의 검증 성공 여부를 구분한다. 재현 불가능한 항목은 REVIEW_REQUIRED이며 전환을 중단한다.
 
-이전 과정에서는 원 단위 처리, 세무조정 규칙, 정책 의미를 동시에 바꾸지 않는다. 새 스키마 생성 후에도 실제 마이그레이션·운영 DB 전환은 별도 요청과 검증 후 수행한다.
+이전 과정에서는 원 단위 처리, 세무조정 규칙, 정책 의미를 동시에 바꾸지 않는다. 신규 DB 생성·앱 연결은 완료했다. 자료가 있는 기존 DB의 자동 이전은 별도 요청과 검증 후 수행한다.

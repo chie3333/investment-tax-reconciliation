@@ -1,30 +1,30 @@
-# 데이터 흐름도 — DB 보완 설계안
+# 데이터 흐름도 — 현재 구현과 후속 범위
 
 상태: **흐름 설계·정규화 스키마 v2·신규 DB 앱 연결 완료** · 작성일: 2026-10-26
 
 관련 문서: [보완 ERD](DATABASE_ERD.md) · [테이블 정의서](DATABASE_TABLES.md) · [현재 업무 흐름](WORKFLOW.md)
 
-ERD가 **무엇과 무엇이 연결되는지**를 보여 준다면, 이 문서는 **자료가 어디서 들어와 어떤 검토를 거쳐 어디에 저장되는지**를 보여 준다. 아래 저장소 이름은 별도 표시가 없으면 보완 DB의 제안 테이블명이다. 원천·정책·계산·승인·원장·결산은 신규 DB 앱에 연결했다. 외부 시세 영구 캐시와 기존 DB 이전 흐름은 향후 계획이다.
+ERD가 **무엇과 무엇이 연결되는지**를 보여 준다면, 이 문서는 **자료가 어디서 들어와 어떤 검토를 거쳐 어디에 저장되는지**를 보여 준다. 1·3·4절은 신규 정규화 DB의 구현된 업무 흐름이다. 2절은 시세 캐시, 6절은 기존 DB 자동 이전의 후속 계획이다. [완료 현황](IMPLEMENTATION_STATUS.md)과 구분해 본다.
 
 ## 1. 전체 데이터 흐름
 
 ```mermaid
 flowchart TD
-    Catalog["종목 목록: API 또는 CSV"] --> Master["공통 종목 마스터<br/>stock_master"]
-    Market["외부 시세 공급자"] --> Prices["필요한 종목·날짜의 시세<br/>market_prices"]
-    User["담당자: 회사·보유분·실제 거래 입력"] --> Assets["회사별 보유자산<br/>companies / investment_assets"]
+    Catalog["종목 직접 등록·CSV"] --> Master["공통 종목 마스터<br/>stock_master"]
+    Market["KRX 조회 또는 수동 가격 입력"] --> PriceInput["화면에서 적용 단가 확인"]
+    User["담당자: 보유분·실제 거래 입력"] --> Assets["회사별 보유자산<br/>companies / investment_assets"]
     Master --> Assets
     Assets --> Trades["매수·매도·배당 원천<br/>trade_events"]
     Assets --> Values["평가 원천<br/>valuation_events"]
-    Prices -->|"가격 검토 후 선택"| Values
+    PriceInput -->|"평가 저장 요청"| Values
     Policies["사업연도·정책·규칙 적용 근거<br/>fiscal_years / 정책 버전 / company_rule_reviews"] --> Calc["서버 독립 계산<br/>calculation_runs"]
     Trades --> Calc
     Values --> Calc
     Calc --> Balances["실행별 자산 잔액·종목 통합원가<br/>calculated_balances / calculated_stock_pools"]
     Balances --> Validation["검증 결과·오류 검토<br/>validation_runs / issue_reviews"]
-    Calc --> Papers["원천별 검증표와 원인별 조정 행<br/>tax_workpapers / tax_adjustment_rows"]
+    Calc --> Papers["원천별 검증표·조정 행 후보<br/>tax_workpapers"]
     Papers --> Review["담당자 법령·금액·소득처분 검토"]
-    Review --> Decisions["명시적 승인<br/>workpaper_decisions"]
+    Review --> Decisions["승인 시 조정 행·결정 저장<br/>tax_adjustment_rows / workpaper_decisions"]
     Decisions --> Ledger["유보 조정만 원장 전기<br/>reserve_entries"]
     Ledger --> Close["원장·장부·승인·검증 재대사 후 결산<br/>fiscal_closes / closing_events"]
     Validation --> Close
@@ -42,7 +42,7 @@ flowchart TD
 
 화살표는 주요 자료 의존성을 나타낸다. 검증 실행과 검증표 생성의 순서를 DB 관계가 강제한다는 뜻은 아니다. 검증표를 생성했더라도 결산에 필요한 현재 버전의 검증·승인·대사를 생략할 수 없다.
 
-## 2. 종목·시세 수집과 평가 반영
+## 2. 후속 계획: 시세 영구 캐시·선택·평가 연결 — 미구현
 
 ```mermaid
 flowchart TD
@@ -113,7 +113,7 @@ flowchart TD
 
 연도별 FVOCI 정책은 해당 사업연도의 처분에 적용한다. 미래 대체 정책을 추가했다고 과거 처분 후 유지한 OCI를 자동 대체하지 않는다. 자세한 계산 사례는 [사업연도별 정책·이월](FVOCI_POLICY_YEARS.md)을 참고한다.
 
-## 5. 기존 DB와 신규 DB의 저장 방식
+## 5. 기존 DB 호환 경로와 신규 DB의 저장 방식 — 구현 완료
 
 | 자료 흐름 | 기존 DB 호환 경로 | 신규 정규화 DB 앱 경로 |
 |---|---|---|
@@ -123,7 +123,7 @@ flowchart TD
 | 검증·검토 | validation_runs 및 검토 상태·이력 | 계산 실행과 직접 연결한 검증·이슈·검토 이력 |
 | 복수 조정 행 | 검증표 JSON 내부의 후보·승인 행 | tax_adjustment_rows 및 승인 고정본 |
 | 승인·취소 | 검증표·이벤트·정정 기록과 유보 전기·역분개 | 명시적인 승인/취소 결정과 조정 행·원장 FK 연결 |
-| 결산·이월 | fiscal_closes·closing_events의 확정 JSON과 계산 근거 | 기존 확정 원문 보존 + 회사·연도·계산·승인의 명확한 연결 |
+| 결산·이월 | fiscal_closes·closing_events의 확정 JSON과 계산 근거 | 정규화 결산 스냅샷 고정 + 회사·연도·계산·승인의 명확한 연결 |
 
 자료의 보관 구조를 바꾸는 작업과 계산 엔진의 금액·정책 의미를 바꾸는 작업은 분리한다. 원 단위 반올림 기준은 이번 문서 작성으로 결정하지 않는다.
 
