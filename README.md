@@ -62,7 +62,7 @@
 Python 3 (표준 라이브러리), 최신 브라우저가 필요합니다.
 
 ```bash
-python3 server.py
+python3 -m app.server
 ```
 
 브라우저에서 **http://127.0.0.1:8000/** 접속. HTML 파일을 직접 열면 SQLite 연동이 되지 않습니다.
@@ -71,7 +71,7 @@ python3 server.py
 
 ```bash
 export KRX_API_KEY='발급받은_키'
-python3 server.py
+python3 -m app.server
 ```
 
 KRX 시세 조회는 API 이용 승인과 응답 형식에 의존하며, 실제 인증키 기반 통합 검증은 완료하지 못했습니다. 조회한 종가는 실제 체결가와 다를 수 있습니다.
@@ -87,11 +87,11 @@ KRX 시세 조회는 API 이용 승인과 응답 형식에 의존하며, 실제 
 ## 테스트
 
 ```bash
-python3 -m unittest discover -v
-node --check test_fiscal_oci.js
-node test_fiscal_oci.js
-node test_oci_v4.js
-node test_pooled.js
+python3 -m unittest discover -s tests/python -t . -v
+node --check tests/js/test_fiscal_oci.js
+node tests/js/test_fiscal_oci.js
+node tests/js/test_oci_v4.js
+node tests/js/test_pooled.js
 ```
 
 테스트는 계산·검증·승인/취소의 일부 경로를 확인합니다. 브라우저 전체 업무 흐름, 실제 KRX API, 법인세 신고 결과에 대한 통합 테스트를 대체하지 않습니다.
@@ -128,13 +128,18 @@ node test_pooled.js
 
 ## 프로젝트 구성
 
-- `index.html`: 웹 UI 및 브라우저 계산 엔진
-- `server.py`: 로컬 HTTP API 및 KRX 시세 프록시
-- `storage.py`: SQLite 업무 상태, 감사·검증 로그
-- `validation_engine.py`: 자동 검증 규칙
-- `workpapers.py`: 세무조정 검증표, 승인·취소
-- `closing.py`: 유보원장, 결산 확정·이월 통제
-- `validation/`, `test_*.py`, `test_*.js`: 테스트
+```text
+app/server/        로컬 HTTP API, SQLite 저장, 검증표·결산 통제
+frontend/          브라우저 UI와 회계·세무 계산 엔진
+validation/        운영 코드와 분리된 Python Decimal 참조 계산기
+tests/python/      서버·검증·결산·참조 계산기 테스트
+tests/js/          브라우저 계산 엔진 회귀 테스트
+docs/              개발 이력과 설계 문서
+scripts/           과거 마이그레이션 등 개발 보조 도구
+data/              로컬 SQLite 데이터(실행 시 생성, Git 제외)
+```
+
+서버 코드는 Python 패키지로 구성되어 내부 경로를 명시적으로 관리합니다. `frontend/`만 정적 파일로 제공하며, 서버 소스나 `data/`는 웹 경로로 노출하지 않습니다. 폴더 정리 전과 동일하게 기본 데이터베이스는 저장소 루트의 `data/investment.sqlite3`를 사용합니다.
 
 ## 개발 방향
 

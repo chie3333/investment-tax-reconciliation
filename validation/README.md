@@ -3,8 +3,7 @@
 ## 실행
 
 ```bash
-cd validation
-python -m unittest discover -v
+python3 -m unittest tests.python.test_engine -v
 ```
 
 외부 패키지나 KRX API 키가 필요하지 않습니다.

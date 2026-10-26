@@ -1,6 +1,6 @@
 import unittest
-from test_validation_engine import ValidationTests
-from validation_engine import validate
+from tests.python.test_validation_engine import ValidationTests
+from app.server.validation_engine import validate
 
 class ExpandedTests(unittest.TestCase):
  def setUp(self):

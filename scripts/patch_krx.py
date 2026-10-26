@@ -1,5 +1,7 @@
+"""Legacy one-time migration retained for development-history reproducibility."""
 from pathlib import Path
-p=Path(__file__).with_name('index.html')
+
+p=Path(__file__).resolve().parents[1] / 'frontend' / 'index.html'
 s=p.read_text()
 extra='''
 <style>
@@ -10,7 +12,7 @@ extra='''
 let krxLastBatch=[];
 async function krxRequest(day,codes,previous){
  const q=new URLSearchParams({date:day,codes:codes.join(','),previous:previous?'1':'0'});
- let res;try{res=await fetch('/api/krx/prices?'+q.toString())}catch(e){throw Error('로컬 Python 서버에 연결할 수 없습니다. python3 server.py 로 실행하세요.')}
+ let res;try{res=await fetch('/api/krx/prices?'+q.toString())}catch(e){throw Error('로컬 Python 서버에 연결할 수 없습니다. python3 -m app.server 로 실행하세요.')}
  let body;try{body=await res.json()}catch(e){throw Error('시세 API가 연결되지 않았습니다. HTML 파일을 직접 연 경우 로컬 서버로 실행하세요.')}
  if(!res.ok)throw Error(body.error||'KRX 시세 조회 실패');return body;
 }

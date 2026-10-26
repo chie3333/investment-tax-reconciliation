@@ -1,5 +1,5 @@
 import unittest
-from validation_engine import validate
+from app.server.validation_engine import validate
 
 class ValidationTests(unittest.TestCase):
  def state(self):

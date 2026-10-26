@@ -1,5 +1,5 @@
-const assert=require('node:assert/strict'),fs=require('fs'),vm=require('vm');
-const html=fs.readFileSync(__dirname+'/index.html','utf8');
+const assert=require('node:assert/strict'),fs=require('fs'),vm=require('vm'),path=require('node:path');
+const html=fs.readFileSync(path.join(__dirname,'../../frontend/index.html'),'utf8');
 const src=html.slice(html.indexOf('function fiscalYear('),html.indexOf('function computedAsset('));
 function calc(data){const ctx={db:{fiscalEndMonth:12,...data},roundW:n=>Math.round(n*100)/100,selectedAccountingMethod:()=> 'MOVING',selectedTaxMethod:()=> 'MOVING',Date,Math,Number,Map,Set};vm.createContext(ctx);vm.runInContext(src,ctx);return vm.runInContext("calculation('2026-12-31')",ctx)}
 const a={id:1,stock_code:'AAA',classification:'FVOCI'},b={id:2,stock_code:'BBB',classification:'FVTPL'};

@@ -3,7 +3,7 @@ from pathlib import Path
 
 class V6Controls(unittest.TestCase):
  def setUp(self):
-  import storage,closing,workpapers
+  from app.server import storage, closing, workpapers
   self.storage=storage;self.closing=closing;self.wp=workpapers
   self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
   self.old=storage.DB_PATH;storage.DB_PATH=Path(self.tmp.name)/'t.sqlite';self.addCleanup(setattr,storage,'DB_PATH',self.old)

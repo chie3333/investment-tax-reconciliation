@@ -5,8 +5,8 @@ Amounts are signed: positive=유보, negative=△유보. A close is not a tax fi
 import json
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
-from storage import connect, LOCK, read_state
-from validation_engine import validate, fiscal_year
+from .storage import connect, LOCK, read_state
+from .validation_engine import validate, fiscal_year
 
 
 def _amount(v):
@@ -88,7 +88,7 @@ def close_year(year, reviewer, note, acknowledge_warnings=False, positions=None)
         result=json.loads(row['result_json'])
         if result['summary']['ERROR']:raise ValueError('검증 오류가 남아 있어 결산 확정이 차단됩니다.')
         if result['summary']['WARNING'] and not acknowledge_warnings:raise ValueError('검증 경고를 검토하고 승인 여부를 명시하세요.')
-        from workpapers import setup as setup_workpapers
+        from .workpapers import setup as setup_workpapers
         setup_workpapers(c)
         candidates=c.execute('SELECT id,status,source_key,source_revision FROM tax_workpapers WHERE fiscal_year=?',(year,)).fetchall()
         if any(r['status']=='DRAFT' for r in candidates):

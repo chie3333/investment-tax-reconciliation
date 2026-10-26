@@ -4,16 +4,17 @@ import os
 import re
 from datetime import date, timedelta
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
-from storage import read_state, save_state, read_audit, save_validation, read_validation_runs, save_issue_review, read_issue_reviews
-from validation_engine import validate
-from closing import summary as closing_summary, add_entry as add_reserve_entry, close_year
-from workpapers import generate as generate_workpapers, list_workpapers, approve as approve_workpaper, cancel_approval as cancel_workpaper
+from .storage import read_state, save_state, read_audit, save_validation, read_validation_runs, save_issue_review, read_issue_reviews
+from .validation_engine import validate
+from .closing import summary as closing_summary, add_entry as add_reserve_entry, close_year
+from .workpapers import generate as generate_workpapers, list_workpapers, approve as approve_workpaper, cancel_approval as cancel_workpaper
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urlparse, urlencode
 from urllib.request import Request, urlopen
 
-ROOT = Path(__file__).resolve().parent
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+FRONTEND_ROOT = REPOSITORY_ROOT / 'frontend'
 KRX_BASE = 'https://data-dbg.krx.co.kr/svc/apis/sto/'
 MARKETS = ('stk_bydd_trd', 'ksq_bydd_trd', 'knx_bydd_trd')
 
@@ -82,7 +83,7 @@ def prices_for_date(day, codes, backtrack=False):
 
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=str(ROOT), **kwargs)
+        super().__init__(*args, directory=str(FRONTEND_ROOT), **kwargs)
 
     def send_json(self, obj, status=200):
         data = json.dumps(obj, ensure_ascii=False).encode('utf-8')
@@ -195,7 +196,11 @@ class Handler(SimpleHTTPRequestHandler):
         return super().do_GET()
 
 
-if __name__ == '__main__':
+def main():
     port = int(os.environ.get('PORT', '8000'))
     print(f'Open http://127.0.0.1:{port}/  (KRX key configured: {bool(os.environ.get("KRX_API_KEY"))})')
     ThreadingHTTPServer(('127.0.0.1', port), Handler).serve_forever()
+
+
+if __name__ == '__main__':
+    main()

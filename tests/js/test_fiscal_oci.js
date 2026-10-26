@@ -1,5 +1,6 @@
 const assert=require('node:assert/strict');const fs=require('fs');const vm=require('vm');
-const html=fs.readFileSync(__dirname+'/index.html','utf8');const src=html.slice(html.indexOf('function fiscalYear('),html.indexOf('function computedAsset('));
+const path=require('node:path');
+const html=fs.readFileSync(path.join(__dirname,'../../frontend/index.html'),'utf8');const src=html.slice(html.indexOf('function fiscalYear('),html.indexOf('function computedAsset('));
 function run(data,asOf){const db={fiscalEndMonth:3,...data};const ctx={db,roundW:n=>Math.round((n+Number.EPSILON)*100)/100,selectedAccountingMethod:()=> 'MOVING',selectedTaxMethod:(code,year)=>year==='2027'?'MOVING':'TOTAL',Date,Math,Number,Map,Set};vm.createContext(ctx);vm.runInContext(src,ctx);return {res:vm.runInContext(`calculation('${asOf}')`,ctx),fy:vm.runInContext("fiscalYear('2026-04-01')",ctx)};}
 const a={id:1,stock_code:'A',classification:'FVOCI'},b={id:2,stock_code:'A',classification:'FVTPL'};
 const data={assets:[a,b],trades:[{id:1,assetId:1,date:'2026-05-01',type:'BUY',qty:10,amount:100},{id:2,assetId:2,date:'2026-06-01',type:'BUY',qty:10,amount:300},{id:3,assetId:1,date:'2027-02-01',type:'SELL',qty:5,amount:100}],valuations:[{id:1,assetId:1,date:'2027-01-01',price:15}]};

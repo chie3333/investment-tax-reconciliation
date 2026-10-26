@@ -1,6 +1,6 @@
 import unittest
 from decimal import Decimal
-from engine import Event, calculate, D
+from validation.engine import Event, calculate, D
 
 class ReferenceTests(unittest.TestCase):
     def test_three_year_fvtpl_and_reserve_reversal(self):

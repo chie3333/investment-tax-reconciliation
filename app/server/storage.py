@@ -6,14 +6,25 @@ import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
-DB_PATH = Path(os.environ.get('INVESTMENT_DB_PATH', Path(__file__).resolve().parent / 'data' / 'investment.sqlite3'))
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+DB_PATH = Path(os.environ.get('INVESTMENT_DB_PATH', REPOSITORY_ROOT / 'data' / 'investment.sqlite3'))
 LOCK = threading.RLock()
 COLLECTIONS = ('master', 'assets', 'trades', 'valuations', 'adjustments', 'taxPolicyYears')
 
 
+class ManagedConnection(sqlite3.Connection):
+    """Commit or roll back on context exit, then release the file handle."""
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        try:
+            return super().__exit__(exc_type, exc_value, traceback)
+        finally:
+            self.close()
+
+
 def connect():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH, timeout=10)
+    conn = sqlite3.connect(DB_PATH, timeout=10, factory=ManagedConnection)
     conn.row_factory = sqlite3.Row
     conn.execute('PRAGMA busy_timeout=10000')
     conn.execute('PRAGMA journal_mode=WAL')
@@ -66,7 +77,7 @@ def save_state(state, expected_revision):
         if revision != expected_revision:
             raise RuntimeError(f'저장 충돌: 서버 버전 {revision}, 요청 버전 {expected_revision}. 새로고침 후 확인하세요.')
         old = json.loads(row['payload']) if row else {}
-        from closing import guard_state_changes
+        from .closing import guard_state_changes
         guard_state_changes(old, state, conn)
         before, after = _records(old), _records(state)
         next_rev = revision + 1

@@ -5,7 +5,7 @@ from unittest.mock import patch
 class ClosingTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
-  import storage,closing
+  from app.server import storage, closing
   self.storage=storage;self.closing=closing
   self.old=storage.DB_PATH;storage.DB_PATH=Path(self.temp.name)/'test.sqlite3';self.addCleanup(setattr,storage,'DB_PATH',self.old)
   self.state={'master':[],'assets':[{'id':1,'stock_code':'005930'}],'trades':[],'valuations':[],'adjustments':[],'taxPolicyYears':[],'fiscalEndMonth':12}
