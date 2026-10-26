@@ -71,6 +71,8 @@
 
 ## 테스트 범위
 
+후속 [FVOCI 유보 환입 독립 검산](FVOCI_RESERVE_RECONCILIATION.md)은 앱 계산을 호출하지 않는 검산기의 금액으로 승인 입력을 구성하고, 8개 사례·두 OCI 정책에서 거래별 전기와 20개 사업연도 결산을 대사한다. 기말합계가 같은 거래별 전기 오류와 부분 처분 취소·재승인도 검증한다.
+
 ```bash
 python3 -m unittest discover -s tests/python -t . -v
 node tests/js/test_fvoci_answers.js

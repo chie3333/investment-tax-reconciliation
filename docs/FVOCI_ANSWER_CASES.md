@@ -144,6 +144,8 @@ OCI 유지 정책은 마지막 자본 내 대체 분개를 하지 않는다. 처
 
 ## 9. 자동 검증 방법
 
+부분 처분의 유보 환입과 혼합 분류 배분, 승인원장·결산까지의 별도 검산은 [FVOCI 부분 처분 유보 환입 정답표](FVOCI_RESERVE_RECONCILIATION.md)에 추가했다. 아래 6개 OCI 사례와 구분되는 8개 유보 사례다.
+
 ```bash
 node tests/js/test_fvoci_answers.js
 python3 -m unittest tests.python.test_fvoci_answers -v
