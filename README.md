@@ -56,7 +56,7 @@
 
 - FVOCI 지분상품의 평가손익과 처분 시 누적 OCI는 당기손익과 분리해 관리합니다.
 - 처분 시 OCI를 당기손익으로 재분류하지 않습니다.
-- **누적 OCI의 이익잉여금 대체 여부는 회사별 회계정책으로 선택**할 수 있어야 합니다. 이 정책의 UI·이력 관리 완성도는 추후 개선 대상입니다.
+- **누적 OCI의 이익잉여금 대체 / OCI 유지**를 데이터 관리 화면에서 선택하고 확인자·사유·변경 이력을 저장합니다. 현재 정책은 과거 거래에도 일괄 적용하며 사업연도별 전환은 후속 과제입니다.
 - OCI에 인식된 금액을 곧바로 '기타'로 확정하지 않습니다. 세무조정 방향·소득처분·유보 환입을 구분하여 검토합니다.
 
 ## 실행
@@ -94,6 +94,7 @@ node --check tests/js/test_fiscal_oci.js
 node tests/js/test_fiscal_oci.js
 node tests/js/test_oci_v4.js
 node tests/js/test_pooled.js
+node tests/js/test_fvoci_answers.js
 ```
 
 테스트는 계산·검증·승인/취소의 일부 경로를 확인합니다. 브라우저 전체 업무 흐름, 실제 KRX API, 법인세 신고 결과에 대한 통합 테스트를 대체하지 않습니다.
@@ -101,6 +102,8 @@ node tests/js/test_pooled.js
 ## 로드맵
 
 ### P0 — 회계·세무 정합성
+- [x] 화면에서 계산 엔진 분리 (`frontend/js/calculation.js`), 실제 모듈 직접 테스트
+- [x] [FVOCI 사례별 정답표](docs/FVOCI_ANSWER_CASES.md), OCI 대체·유지 정책 및 독립 Decimal 검산
 - [ ] **FVOCI 부분 처분 유보 환입을 독립적으로 재계산**하고 통합 세무원가·분류별 배분·거래별 유보원장과 완전 대사
 - [ ] 회계상 PL/OCI/자본 내 대체와 세무조정의 복수 행 생성 규칙을 사례별 검증
 - [ ] 회사별 FVOCI 누적 OCI 자본 내 대체/유지 정책 및 변경 이력 관리
@@ -132,10 +135,10 @@ node tests/js/test_pooled.js
 
 ```text
 app/server/        로컬 HTTP API, SQLite 저장, 검증표·결산 통제
-frontend/          브라우저 UI와 회계·세무 계산 엔진
+frontend/          브라우저 UI 및 js/calculation.js 공유 계산 모듈
 validation/        운영 코드와 분리된 Python Decimal 참조 계산기
 tests/python/      서버·검증·결산·참조 계산기 테스트
-tests/js/          브라우저 계산 엔진 회귀 테스트
+tests/js/          공유 계산 모듈 회귀 테스트 (정답 데이터는 tests/fixtures/)
 docs/              개발 이력과 설계 문서
 scripts/           과거 마이그레이션 등 개발 보조 도구
 data/              로컬 SQLite 데이터(실행 시 생성, Git 제외)

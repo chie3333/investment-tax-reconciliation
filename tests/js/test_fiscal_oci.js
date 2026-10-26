@@ -1,7 +1,6 @@
-const assert=require('node:assert/strict');const fs=require('fs');const vm=require('vm');
-const path=require('node:path');
-const html=fs.readFileSync(path.join(__dirname,'../../frontend/index.html'),'utf8');const src=html.slice(html.indexOf('function fiscalYear('),html.indexOf('function computedAsset('));
-function run(data,asOf){const db={fiscalEndMonth:3,...data};const ctx={db,roundW:n=>Math.round((n+Number.EPSILON)*100)/100,selectedAccountingMethod:()=> 'MOVING',selectedTaxMethod:(code,year)=>year==='2027'?'MOVING':'TOTAL',Date,Math,Number,Map,Set};vm.createContext(ctx);vm.runInContext(src,ctx);return {res:vm.runInContext(`calculation('${asOf}')`,ctx),fy:vm.runInContext("fiscalYear('2026-04-01')",ctx)};}
+const assert=require('node:assert/strict');
+const engine=require('../../frontend/js/calculation.js');
+function run(data,asOf){const db={fiscalEndMonth:3,...data};return {res:engine.calculate(db,asOf,{accountingMethod:()=> 'MOVING',taxMethod:(code,year)=>year==='2027'?'MOVING':'TOTAL'}),fy:engine.fiscalYear('2026-04-01',3)};}
 const a={id:1,stock_code:'A',classification:'FVOCI'},b={id:2,stock_code:'A',classification:'FVTPL'};
 const data={assets:[a,b],trades:[{id:1,assetId:1,date:'2026-05-01',type:'BUY',qty:10,amount:100},{id:2,assetId:2,date:'2026-06-01',type:'BUY',qty:10,amount:300},{id:3,assetId:1,date:'2027-02-01',type:'SELL',qty:5,amount:100}],valuations:[{id:1,assetId:1,date:'2027-01-01',price:15}]};
 let {res,fy}=run(data,'2027-03-31');assert.equal(fy,'2027');assert.equal(res.reconciliation[0].qty,15);assert.equal(res.reconciliation[0].tax,300);assert.equal(res.positions.reduce((n,p)=>n+p.tax,0),300);const sell=res.ledger.find(x=>x.type==='SELL');assert.equal(sell.taxPL,0);assert.equal(sell.adj,0);assert.equal(sell.ociRecycling,false);

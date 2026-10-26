@@ -10,6 +10,8 @@ python3 -m unittest tests.python.test_engine -v
 
 ## 구현된 범위
 
+P0 FVOCI 검산은 `fvoci_reference.py`와 `tests/fixtures/fvoci_cases.json`을 사용합니다. `python3 -m unittest tests.python.test_fvoci_answers -v`로 실행하며, 단일 FVOCI 자산 사례를 두 자본 정책에 대해 Decimal로 독립 계산합니다. 서버의 승인·결산 경로에는 아직 연결하지 않았습니다. [정답표와 가정](../docs/FVOCI_ANSWER_CASES.md)을 참조하세요.
+
 - 독립적인 Python Decimal 기반 FVTPL 참조 계산기 (`engine.py`)
 - 매수, 처분, 기말 공정가치 평가, 배당 이벤트
 - 세무상 이동평균법 및 연도별 총평균법 **시뮬레이션**

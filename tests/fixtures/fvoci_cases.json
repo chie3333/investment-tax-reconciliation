@@ -1,0 +1,694 @@
+{
+  "schemaVersion": 1,
+  "description": "Hand-calculated expectations; retainedOCI means total OCI under RETAIN policy.",
+  "cases": [
+    {
+      "id": "gain_partial_full",
+      "title": "평가이익 후 부분 처분·재평가·전량 처분",
+      "state": {
+        "fiscalEndMonth": 12,
+        "assets": [
+          {
+            "id": 1,
+            "classification": "FVOCI",
+            "stock_code": "A",
+            "asset_name": "A"
+          }
+        ],
+        "trades": [
+          {
+            "id": 1,
+            "date": "2026-01-01",
+            "qty": 10,
+            "amount": 100,
+            "assetId": 1,
+            "type": "BUY"
+          },
+          {
+            "id": 2,
+            "date": "2026-07-01",
+            "qty": 5,
+            "amount": 90,
+            "assetId": 1,
+            "type": "SELL"
+          },
+          {
+            "id": 3,
+            "date": "2026-11-01",
+            "qty": 5,
+            "amount": 55,
+            "assetId": 1,
+            "type": "SELL"
+          }
+        ],
+        "valuations": [
+          {
+            "id": 1,
+            "date": "2026-06-30",
+            "price": 14,
+            "assetId": 1
+          },
+          {
+            "id": 2,
+            "date": "2026-09-30",
+            "price": 12,
+            "assetId": 1
+          }
+        ],
+        "stockPolicies": {
+          "A": {
+            "book": "MOVING"
+          }
+        },
+        "taxPolicy": {
+          "method": "MOVING"
+        }
+      },
+      "checks": [
+        {
+          "asOf": "2026-06-30",
+          "positions": [
+            {
+              "id": 1,
+              "qty": 10,
+              "book": 140,
+              "tax": 100,
+              "reserve": -40,
+              "activeOCI": 40,
+              "oci": 40,
+              "retainedOCI": 40
+            }
+          ],
+          "event": {
+            "kind": "valuation",
+            "id": 1,
+            "ociChange": 40,
+            "bookPL": 0,
+            "reserveChange": -40
+          }
+        },
+        {
+          "asOf": "2026-07-01",
+          "positions": [
+            {
+              "id": 1,
+              "qty": 5,
+              "book": 70,
+              "tax": 50,
+              "reserve": -20,
+              "activeOCI": 20,
+              "oci": 20,
+              "retainedOCI": 60
+            }
+          ],
+          "event": {
+            "kind": "trade",
+            "id": 2,
+            "ociChange": 20,
+            "transfer": 40,
+            "taxPL": 40,
+            "bookPL": 0,
+            "adj": 40,
+            "reserveChange": 20
+          }
+        },
+        {
+          "asOf": "2026-09-30",
+          "positions": [
+            {
+              "id": 1,
+              "qty": 5,
+              "book": 60,
+              "tax": 50,
+              "reserve": -10,
+              "activeOCI": 10,
+              "oci": 10,
+              "retainedOCI": 50
+            }
+          ],
+          "event": {
+            "kind": "valuation",
+            "id": 2,
+            "ociChange": -10,
+            "bookPL": 0,
+            "reserveChange": 10
+          }
+        },
+        {
+          "asOf": "2026-11-01",
+          "positions": [
+            {
+              "id": 1,
+              "qty": 0,
+              "book": 0,
+              "tax": 0,
+              "reserve": 0,
+              "activeOCI": 0,
+              "oci": 0,
+              "retainedOCI": 45
+            }
+          ],
+          "event": {
+            "kind": "trade",
+            "id": 3,
+            "ociChange": -5,
+            "transfer": 5,
+            "taxPL": 5,
+            "bookPL": 0,
+            "adj": 5,
+            "reserveChange": 10
+          }
+        }
+      ]
+    },
+    {
+      "id": "loss_partial_full",
+      "title": "평가손실 후 부분·전량 처분",
+      "state": {
+        "fiscalEndMonth": 12,
+        "assets": [
+          {
+            "id": 1,
+            "classification": "FVOCI",
+            "stock_code": "A",
+            "asset_name": "A"
+          }
+        ],
+        "trades": [
+          {
+            "id": 1,
+            "date": "2026-01-01",
+            "qty": 10,
+            "amount": 100,
+            "assetId": 1,
+            "type": "BUY"
+          },
+          {
+            "id": 2,
+            "date": "2026-07-01",
+            "qty": 4,
+            "amount": 20,
+            "assetId": 1,
+            "type": "SELL"
+          },
+          {
+            "id": 3,
+            "date": "2026-11-01",
+            "qty": 6,
+            "amount": 48,
+            "assetId": 1,
+            "type": "SELL"
+          }
+        ],
+        "valuations": [
+          {
+            "id": 1,
+            "date": "2026-06-30",
+            "price": 6,
+            "assetId": 1
+          }
+        ],
+        "stockPolicies": {
+          "A": {
+            "book": "MOVING"
+          }
+        },
+        "taxPolicy": {
+          "method": "MOVING"
+        }
+      },
+      "checks": [
+        {
+          "asOf": "2026-07-01",
+          "positions": [
+            {
+              "id": 1,
+              "qty": 6,
+              "book": 36,
+              "tax": 60,
+              "reserve": 24,
+              "activeOCI": -24,
+              "oci": -24,
+              "retainedOCI": -44
+            }
+          ],
+          "event": {
+            "kind": "trade",
+            "id": 2,
+            "ociChange": -4,
+            "transfer": -20,
+            "taxPL": -20,
+            "bookPL": 0,
+            "adj": -20,
+            "reserveChange": -16
+          }
+        },
+        {
+          "asOf": "2026-11-01",
+          "positions": [
+            {
+              "id": 1,
+              "qty": 0,
+              "book": 0,
+              "tax": 0,
+              "reserve": 0,
+              "activeOCI": 0,
+              "oci": 0,
+              "retainedOCI": -32
+            }
+          ],
+          "event": {
+            "kind": "trade",
+            "id": 3,
+            "ociChange": 12,
+            "transfer": -12,
+            "taxPL": -12,
+            "bookPL": 0,
+            "adj": -12,
+            "reserveChange": -24
+          }
+        }
+      ]
+    },
+    {
+      "id": "mixed_pool",
+      "title": "동일 종목 FVOCI·FVTPL 통합 원가",
+      "state": {
+        "fiscalEndMonth": 12,
+        "assets": [
+          {
+            "id": 1,
+            "classification": "FVOCI",
+            "stock_code": "A",
+            "asset_name": "A"
+          },
+          {
+            "id": 2,
+            "classification": "FVTPL",
+            "stock_code": "A",
+            "asset_name": "A"
+          }
+        ],
+        "trades": [
+          {
+            "id": 1,
+            "date": "2026-01-01",
+            "qty": 10,
+            "amount": 100,
+            "assetId": 1,
+            "type": "BUY"
+          },
+          {
+            "id": 2,
+            "date": "2026-02-01",
+            "qty": 10,
+            "amount": 300,
+            "assetId": 2,
+            "type": "BUY"
+          },
+          {
+            "id": 3,
+            "date": "2026-07-01",
+            "qty": 5,
+            "amount": 90,
+            "assetId": 1,
+            "type": "SELL"
+          },
+          {
+            "id": 4,
+            "date": "2026-11-01",
+            "qty": 5,
+            "amount": 110,
+            "assetId": 1,
+            "type": "SELL"
+          }
+        ],
+        "valuations": [
+          {
+            "id": 1,
+            "date": "2026-06-30",
+            "price": 14,
+            "assetId": 1
+          },
+          {
+            "id": 2,
+            "date": "2026-06-30",
+            "price": 16,
+            "assetId": 2
+          }
+        ],
+        "stockPolicies": {
+          "A": {
+            "book": "MOVING"
+          }
+        },
+        "taxPolicy": {
+          "method": "MOVING"
+        }
+      },
+      "checks": [
+        {
+          "asOf": "2026-07-01",
+          "positions": [
+            {
+              "id": 1,
+              "qty": 5,
+              "book": 70,
+              "tax": 100,
+              "reserve": 30,
+              "activeOCI": 20,
+              "oci": 20,
+              "retainedOCI": 60
+            },
+            {
+              "id": 2,
+              "qty": 10,
+              "book": 160,
+              "tax": 200,
+              "reserve": 40,
+              "activeOCI": 0,
+              "oci": 0,
+              "retainedOCI": 0
+            }
+          ],
+          "event": {
+            "kind": "trade",
+            "id": 3,
+            "ociChange": 20,
+            "transfer": 40,
+            "taxPL": -10,
+            "bookPL": 0,
+            "adj": -10,
+            "reserveChange": -30
+          }
+        },
+        {
+          "asOf": "2026-11-01",
+          "positions": [
+            {
+              "id": 1,
+              "qty": 0,
+              "book": 0,
+              "tax": 0,
+              "reserve": 0,
+              "activeOCI": 0,
+              "oci": 0,
+              "retainedOCI": 100
+            },
+            {
+              "id": 2,
+              "qty": 10,
+              "book": 160,
+              "tax": 200,
+              "reserve": 40,
+              "activeOCI": 0,
+              "oci": 0,
+              "retainedOCI": 0
+            }
+          ],
+          "event": {
+            "kind": "trade",
+            "id": 4,
+            "ociChange": 40,
+            "transfer": 60,
+            "taxPL": 10,
+            "bookPL": 0,
+            "adj": 10,
+            "reserveChange": -30
+          }
+        }
+      ]
+    },
+    {
+      "id": "total_late_buy",
+      "title": "총평균법은 같은 사업연도의 후속 매수를 포함",
+      "state": {
+        "fiscalEndMonth": 12,
+        "assets": [
+          {
+            "id": 1,
+            "classification": "FVOCI",
+            "stock_code": "A",
+            "asset_name": "A"
+          }
+        ],
+        "trades": [
+          {
+            "id": 1,
+            "date": "2026-01-01",
+            "qty": 10,
+            "amount": 100,
+            "assetId": 1,
+            "type": "BUY"
+          },
+          {
+            "id": 2,
+            "date": "2026-06-01",
+            "qty": 5,
+            "amount": 90,
+            "assetId": 1,
+            "type": "SELL"
+          },
+          {
+            "id": 3,
+            "date": "2026-09-01",
+            "qty": 10,
+            "amount": 300,
+            "assetId": 1,
+            "type": "BUY"
+          }
+        ],
+        "valuations": [],
+        "stockPolicies": {
+          "A": {
+            "book": "MOVING"
+          }
+        },
+        "taxPolicy": {
+          "method": "TOTAL"
+        }
+      },
+      "checks": [
+        {
+          "asOf": "2026-12-31",
+          "positions": [
+            {
+              "id": 1,
+              "qty": 15,
+              "book": 350,
+              "tax": 300,
+              "reserve": -50,
+              "activeOCI": 0,
+              "oci": 0,
+              "retainedOCI": 40
+            }
+          ],
+          "event": {
+            "kind": "trade",
+            "id": 2,
+            "ociChange": 40,
+            "transfer": 40,
+            "taxPL": -10,
+            "bookPL": 0,
+            "adj": -10,
+            "reserveChange": -50
+          }
+        }
+      ]
+    },
+    {
+      "id": "moving_late_buy",
+      "title": "이동평균법은 처분 시점까지의 매수만 포함",
+      "state": {
+        "fiscalEndMonth": 12,
+        "assets": [
+          {
+            "id": 1,
+            "classification": "FVOCI",
+            "stock_code": "A",
+            "asset_name": "A"
+          }
+        ],
+        "trades": [
+          {
+            "id": 1,
+            "date": "2026-01-01",
+            "qty": 10,
+            "amount": 100,
+            "assetId": 1,
+            "type": "BUY"
+          },
+          {
+            "id": 2,
+            "date": "2026-06-01",
+            "qty": 5,
+            "amount": 90,
+            "assetId": 1,
+            "type": "SELL"
+          },
+          {
+            "id": 3,
+            "date": "2026-09-01",
+            "qty": 10,
+            "amount": 300,
+            "assetId": 1,
+            "type": "BUY"
+          }
+        ],
+        "valuations": [],
+        "stockPolicies": {
+          "A": {
+            "book": "MOVING"
+          }
+        },
+        "taxPolicy": {
+          "method": "MOVING"
+        }
+      },
+      "checks": [
+        {
+          "asOf": "2026-12-31",
+          "positions": [
+            {
+              "id": 1,
+              "qty": 15,
+              "book": 350,
+              "tax": 350,
+              "reserve": 0,
+              "activeOCI": 0,
+              "oci": 0,
+              "retainedOCI": 40
+            }
+          ],
+          "event": {
+            "kind": "trade",
+            "id": 2,
+            "ociChange": 40,
+            "transfer": 40,
+            "taxPL": 40,
+            "bookPL": 0,
+            "adj": 40,
+            "reserveChange": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "repeated_partial",
+      "title": "OCI 유지 시 처분된 주식의 OCI를 다음 처분에 재배분하지 않음",
+      "state": {
+        "fiscalEndMonth": 12,
+        "assets": [
+          {
+            "id": 1,
+            "classification": "FVOCI",
+            "stock_code": "A",
+            "asset_name": "A"
+          }
+        ],
+        "trades": [
+          {
+            "id": 1,
+            "date": "2026-01-01",
+            "qty": 10,
+            "amount": 100,
+            "assetId": 1,
+            "type": "BUY"
+          },
+          {
+            "id": 2,
+            "date": "2026-07-01",
+            "qty": 2,
+            "amount": 36,
+            "assetId": 1,
+            "type": "SELL"
+          },
+          {
+            "id": 3,
+            "date": "2026-08-01",
+            "qty": 3,
+            "amount": 45,
+            "assetId": 1,
+            "type": "SELL"
+          },
+          {
+            "id": 4,
+            "date": "2026-11-01",
+            "qty": 5,
+            "amount": 80,
+            "assetId": 1,
+            "type": "SELL"
+          }
+        ],
+        "valuations": [
+          {
+            "id": 1,
+            "date": "2026-06-30",
+            "price": 14,
+            "assetId": 1
+          }
+        ],
+        "stockPolicies": {
+          "A": {
+            "book": "MOVING"
+          }
+        },
+        "taxPolicy": {
+          "method": "MOVING"
+        }
+      },
+      "checks": [
+        {
+          "asOf": "2026-08-01",
+          "positions": [
+            {
+              "id": 1,
+              "qty": 5,
+              "book": 70,
+              "tax": 50,
+              "reserve": -20,
+              "activeOCI": 20,
+              "oci": 20,
+              "retainedOCI": 51
+            }
+          ],
+          "event": {
+            "kind": "trade",
+            "id": 3,
+            "ociChange": 3,
+            "transfer": 15,
+            "taxPL": 15,
+            "bookPL": 0,
+            "adj": 15,
+            "reserveChange": 12
+          }
+        },
+        {
+          "asOf": "2026-11-01",
+          "positions": [
+            {
+              "id": 1,
+              "qty": 0,
+              "book": 0,
+              "tax": 0,
+              "reserve": 0,
+              "activeOCI": 0,
+              "oci": 0,
+              "retainedOCI": 61
+            }
+          ],
+          "event": {
+            "kind": "trade",
+            "id": 4,
+            "ociChange": 10,
+            "transfer": 30,
+            "taxPL": 30,
+            "bookPL": 0,
+            "adj": 30,
+            "reserveChange": 20
+          }
+        }
+      ]
+    }
+  ]
+}

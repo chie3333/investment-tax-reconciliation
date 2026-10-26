@@ -32,4 +32,14 @@ class ClosingTests(unittest.TestCase):
  def test_closed_reserve_immutable(self):
   self.valid(2026);self.closing.close_year(2026,'reviewer','검토',positions=[{'assetId':1,'qty':0,'book':0,'tax':0}])
   with self.assertRaisesRegex(ValueError,'비활성화'):self.closing.add_entry(2026,1,'FVTPL','x',1,'수정')
+ def test_closed_fvoci_policy_immutable(self):
+  self.valid(2026);self.closing.close_year(2026,'reviewer','검토',positions=[{'assetId':1,'qty':0,'book':0,'tax':0}])
+  changed={**self.state,'fvociPolicy':{'disposal':'RETAIN','reviewer':'검토자','reason':'회사 정책'}}
+  with self.assertRaisesRegex(ValueError,'fvociPolicy'):self.storage.save_state(changed,1)
+ def test_fvoci_policy_saved_and_audited(self):
+  policy={'disposal':'RETAIN','reviewer':'검토자','reason':'회사 정책','history':[]}
+  self.storage.save_state({**self.state,'fvociPolicy':policy},1)
+  self.assertEqual(self.storage.read_state()['state']['fvociPolicy'],policy)
+  events=self.storage.read_audit()
+  self.assertTrue(any(e['entity']=='settings' and e['entity_key']=='fvociPolicy' for e in events))
 if __name__=='__main__':unittest.main()

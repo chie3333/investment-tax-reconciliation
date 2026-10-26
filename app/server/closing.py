@@ -169,7 +169,7 @@ def guard_state_changes(before,after,connection=None):
                     try: fy=fiscal_year(record['date'],month)
                     except ValueError:raise ValueError('거래 날짜가 잘못되었습니다.')
                     if fy in closed:raise ValueError(f'{fy}사업연도는 결산 확정되어 {name} 변경이 차단됩니다.')
-    for name in ('assets','stockPolicies','taxPolicyYears','taxPolicy','taxBasis'):
+    for name in ('assets','stockPolicies','taxPolicyYears','taxPolicy','taxBasis','fvociPolicy'):
         if before.get(name)!=after.get(name):raise ValueError(f'확정 결산이 있어 {name} 변경은 별도 재개방 절차가 필요합니다.')
 
 

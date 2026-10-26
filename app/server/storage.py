@@ -56,7 +56,7 @@ def _records(state):
     for name in ('taxBasis', 'stockPolicies'):
         for key, value in (state.get(name) or {}).items():
             out[(name, str(key))] = value
-    for name in ('taxPolicy', 'fiscalEndMonth', 'ids'):
+    for name in ('taxPolicy', 'fiscalEndMonth', 'fvociPolicy', 'ids'):
         out[('settings', name)] = state.get(name)
     return out
 
