@@ -47,11 +47,11 @@ def read_state(connection=None):
 
 def _records(state):
     out = {}
-    for name in COLLECTIONS:
+    for name in COLLECTIONS + ('fvociPolicyYears',):
         for item in state.get(name, []):
             if not isinstance(item, dict):
                 continue
-            key = item.get('id', item.get('code', item.get('startYear', item.get('effectiveYear'))))
+            key = item.get('effectiveYear') if name=='fvociPolicyYears' else item.get('id', item.get('code', item.get('startYear', item.get('effectiveYear'))))
             if key is None:
                 key = json.dumps(item, sort_keys=True, ensure_ascii=False)
             out[(name, str(key))] = item
@@ -73,6 +73,8 @@ def save_state(state, expected_revision):
             raise ValueError(f'{name}은 배열이어야 합니다.')
     if 'taxAdjustmentScope' in state and not isinstance(state['taxAdjustmentScope'],dict):
         raise ValueError('세무조정 적용범위는 객체여야 합니다.')
+    from .fvoci_policy import policy_schedule
+    policy_schedule(state)
     now = datetime.now(timezone.utc).isoformat()
     with LOCK, connect() as conn:
         conn.execute('BEGIN IMMEDIATE')

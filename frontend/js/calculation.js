@@ -9,9 +9,24 @@ const roundW=n=>Math.sign(n)*Math.round((Math.abs(n)+Number.EPSILON*Math.max(1,M
 function fiscalYear(date,endMonth=12){const [y,m]=date.slice(0,7).split('-').map(Number);return String(y+(m>Number(endMonth)?1:0));}
 function fiscalEndDate(year,endMonth=12){return year+'-'+String(endMonth).padStart(2,'0')+'-'+String(new Date(Number(year),endMonth,0).getDate()).padStart(2,'0');}
 const apiFiscalYear=fiscalYear;
+function fvociPolicySchedule(db){
+ const baseline=db.fvociPolicy?.disposal===undefined?'TRANSFER':db.fvociPolicy.disposal;
+ if(!['TRANSFER','RETAIN'].includes(baseline))throw new Error('FVOCI 처분 정책 오류');
+ const rows=db.fvociPolicyYears===undefined?[]:db.fvociPolicyYears;
+ if(!Array.isArray(rows))throw new Error('FVOCI 사업연도별 정책은 배열이어야 합니다.');
+ const seen=new Set();
+ for(const row of rows){
+  if(!row||!Number.isInteger(row.effectiveYear)||row.effectiveYear<1900||row.effectiveYear>2200||seen.has(row.effectiveYear))throw new Error('FVOCI 적용 시작 사업연도 오류 또는 중복');
+  seen.add(row.effectiveYear);
+  if(!['TRANSFER','RETAIN'].includes(row.disposal))throw new Error('FVOCI 처분 정책 오류');
+  if(!String(row.reviewer||'').trim()||!String(row.reason||'').trim())throw new Error('FVOCI 사업연도별 정책 확인자와 사유가 필요합니다.');
+ }
+ return {baseline,rows:[...rows].sort((a,b)=>a.effectiveYear-b.effectiveYear)};
+}
+function resolveFvociPolicy(schedule,year){return schedule.rows.filter(r=>r.effectiveYear<=Number(year)).at(-1)?.disposal||schedule.baseline;}
+function fvociPolicyForYear(db,year){return resolveFvociPolicy(fvociPolicySchedule(db),year);}
 function calculate(db,asOf='9999-12-31',options={}){
- const disposalPolicy=db.fvociPolicy?.disposal||'TRANSFER';
- if(!['TRANSFER','RETAIN'].includes(disposalPolicy))throw new Error('FVOCI 처분 정책 오류');
+ const policySchedule=fvociPolicySchedule(db);
  const fiscalYear=date=>apiFiscalYear(date,db.fiscalEndMonth||12);
  const selectedAccountingMethod=options.accountingMethod||(code=>{
   const method=db.stockPolicies?.[code]?.book;
@@ -107,6 +122,7 @@ function calculate(db,asOf='9999-12-31',options={}){
   }
   let taxMovingQ=0,taxMovingCost=0,bookCostQ=0,bookCostBalance=0,bookLots=[];
   for(const e of events){
+   const disposalPolicy=resolveFvociPolicy(policySchedule,fiscalYear(e.date));
    let bookPL=0,taxPL=0,adj=0,classification=a.classification,desc='',direction='',reserveChange=0,deltaOCI=0,ociEquityTransfer=0,directEquityDisposal=0,ociTaxableCandidate=0,ociAdjustmentReview=false;
    const oldBook=book,oldTax=tax,year=fiscalYear(e.date),taxMethod=selectedTaxMethod(a.stock_code,year);
    if(e.kind==='trade'&&e.type==='BUY'){
@@ -177,7 +193,7 @@ function calculate(db,asOf='9999-12-31',options={}){
    pl+=bookPL;reserve+=reserveChange;
    ledger.push({asset:a,date:e.date,kind:e.kind,type:e.type||'VALUATION',desc,qty:q,book:roundW(book),tax:roundW(tax),bookPL:roundW(bookPL),taxPL:roundW(taxPL),ociChange:roundW(deltaOCI),adj:roundW(adj),reserveChange:roundW(reserveChange),reserve:roundW(reserve),direction,sourceId:e.id,ociEquityTransfer:roundW(ociEquityTransfer),directEquityDisposal:roundW(directEquityDisposal),ociTaxableCandidate:roundW(ociTaxableCandidate),ociAdjustmentReview});
   }
-  positions.push({asset:a,qty:q,book:roundW(book),tax:roundW(tax),oci:roundW(oci),activeOCI:roundW(activeOCI),retainedDisposalOCI:roundW(oci-activeOCI),fvociDisposalPolicy:disposalPolicy,pl:roundW(pl),dividend:roundW(dividend),reserve:roundW(reserve)});
+  positions.push({asset:a,qty:q,book:roundW(book),tax:roundW(tax),oci:roundW(oci),activeOCI:roundW(activeOCI),retainedDisposalOCI:roundW(oci-activeOCI),fvociDisposalPolicy:resolveFvociPolicy(policySchedule,fiscalYear(asOf)),pl:roundW(pl),dividend:roundW(dividend),reserve:roundW(reserve)});
  }
  // Allocate at every successful event, rather than only at the final snapshot.
  // Allocation effects on other classifications are explicit, never tax profit.
@@ -223,7 +239,7 @@ function calculate(db,asOf='9999-12-31',options={}){
   row.ociTaxBridgeNote=row.type==='SELL'?'FVOCI 처분: 세법상 처분손익의 과세소득 반영·소득처분 검토 필요':
     row.type==='VALUATION'?'FVOCI 평가: OCI 변동은 당기손익 아님. 자본·세무기준 차이 검토 필요':'';
   row.ociRecycling=false;
-  row.fvociDisposalPolicy=disposalPolicy;
+  row.fvociDisposalPolicy=resolveFvociPolicy(policySchedule,fiscalYear(row.date));
   row.taxDisposition='REVIEW_REQUIRED';
  }
  const reconciliation=stockCodes.map(code=>{
@@ -247,5 +263,5 @@ function workpaperCandidates(state,year){
   }));
 }
 
-return Object.freeze({calculate,fiscalYear,fiscalEndDate,workpaperCandidates});
+return Object.freeze({calculate,fiscalYear,fiscalEndDate,workpaperCandidates,fvociPolicyForYear});
 });

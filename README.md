@@ -58,7 +58,7 @@
 
 - FVOCI 지분상품의 평가손익과 처분 시 누적 OCI는 당기손익과 분리해 관리합니다.
 - 처분 시 OCI를 당기손익으로 재분류하지 않습니다.
-- **누적 OCI의 이익잉여금 대체 / OCI 유지**를 데이터 관리 화면에서 선택하고 확인자·사유·변경 이력을 저장합니다. 현재 정책은 과거 거래에도 일괄 적용하며 사업연도별 전환은 후속 과제입니다.
+- **누적 OCI의 이익잉여금 대체 / OCI 유지**를 적용 시작 사업연도·확인자·사유와 함께 저장합니다. 종료연도 기준으로 다음 변경 전까지 적용하며, 기존 공통 정책과 확정 결산은 보존합니다. [연도별 정책·이월 정답표](docs/FVOCI_POLICY_YEARS.md)를 참고하세요.
 - OCI에 인식된 금액을 곧바로 '기타'로 확정하지 않습니다. 세무조정 방향·소득처분·유보 환입을 구분하여 검토합니다.
 
 ## 실행
@@ -100,6 +100,7 @@ node tests/js/test_fvoci_answers.js
 node tests/js/test_fvoci_reserves.js
 node tests/js/test_reserve_labels.js
 node tests/js/test_tax_rule_ui.js
+node tests/js/test_fvoci_policy_years.js
 ```
 
 테스트는 계산·검증·승인/취소의 일부 경로를 확인합니다. 브라우저 전체 업무 흐름, 실제 KRX API, 법인세 신고 결과에 대한 통합 테스트를 대체하지 않습니다.
@@ -112,7 +113,7 @@ node tests/js/test_tax_rule_ui.js
 - [x] [서버 독립 재계산과 승인·결산 연결](docs/SERVER_RECALCULATION.md), 혼합 보유 배분효과와 전기 유보 이월 대사
 - [x] [FVOCI 부분 처분 유보 환입 독립 검산](docs/FVOCI_RESERVE_RECONCILIATION.md): 8개 고정 사례, 혼합 분류·통합원가·거래별 원장·20개 연도 결산 대사 (명시된 산술 가정 범위)
 - [x] [2026 일반 국내 상장주식 복수 행 규칙](docs/TAX_ADJUSTMENT_RULES_2026.md): PL/OCI/자본 내 대체 구분, 16개 조건부 정답 × 두 정책의 승인·원장·결산 검증 (예외·혼합 분류 자동 적용 제외)
-- [ ] 회사별 FVOCI 누적 OCI 자본 내 대체/유지 정책 및 변경 이력 관리
+- [x] [FVOCI 사업연도별 대체/유지 정책·변경 이력](docs/FVOCI_POLICY_YEARS.md), 확정 결산 보존·소급 수정 차단·12월/3월 결산 이월 검증 (과거 처분 유지분의 일괄 대체 제외)
 - [ ] 세법상 원가·소득처분·유보 환입의 법령/예외 요건을 사업연도별로 검증
 - [ ] Decimal 기반 원 단위 반올림·잔여액 배분 규칙 정립
 

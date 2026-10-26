@@ -12,7 +12,7 @@ const context = vm.createContext({document:{readyState:'loading',addEventListene
  db:{assets:[{id:1,stock_code:'A',asset_name:'종목 A',classification:'FVOCI'}]},dbReady:true,dbSaveFailed:false,
  dbSaveQueue:Promise.resolve(),confirm:()=>true,notify:s=>messages.push(s),
  esc:s=>String(s??'').replaceAll('<','&lt;'),won:n=>String(n),
- assetLabel:a=>a.asset_name,getAsset:()=>({asset_name:'종목 A'}),
+ assetLabel:a=>a.asset_name,getAsset:()=>({asset_name:'종목 A'}),fiscalYear:()=>2026,
  table:(headers,rows)=>headers.join(' ')+rows.flat().join(' ')});
 new vm.Script(script).runInContext(context);
 assert.equal(context.suggestedWorkpaperRows({candidate_adjustment:40,reserve_change:20}).length,0,'no generic plug row');

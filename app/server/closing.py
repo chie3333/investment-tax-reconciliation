@@ -168,7 +168,9 @@ def close_year(year, reviewer, note, acknowledge_warnings=False, positions=None)
                 raise ValueError(f'{code} 전량 처분 자산 장부 잔액이 남았습니다.')
         now=datetime.now(timezone.utc).isoformat()
         c.execute('INSERT INTO fiscal_closes VALUES(?,?,?,?,?,?,?,?,?)',(year,current['revision'],row['id'],now,json.dumps(opening),json.dumps(movements),json.dumps(ending),str(reviewer),str(note)))
-        c.execute('INSERT INTO closing_events(fiscal_year,event,recorded_at,detail_json) VALUES(?,?,?,?)',(year,'CLOSE',now,json.dumps({'revision':current['revision'],'validation_run':row['id'],'reviewer':reviewer,'warnings_approved':bool(acknowledge_warnings),'calculation':proof,'positions':calculated['positions']},ensure_ascii=False)))
+        policy_snapshot={'legacy':st.get('fvociPolicy'),
+                         'years':[r for r in st.get('fvociPolicyYears',[]) if r['effectiveYear']<=year]}
+        c.execute('INSERT INTO closing_events(fiscal_year,event,recorded_at,detail_json) VALUES(?,?,?,?)',(year,'CLOSE',now,json.dumps({'revision':current['revision'],'validation_run':row['id'],'reviewer':reviewer,'warnings_approved':bool(acknowledge_warnings),'calculation':proof,'positions':calculated['positions'],'fvoci_policy_snapshot':policy_snapshot},ensure_ascii=False)))
         c.commit()
     return summary(year)
 
@@ -198,6 +200,11 @@ def guard_state_changes(before,after,connection=None):
                     if fy in closed:raise ValueError(f'{fy}사업연도는 결산 확정되어 {name} 변경이 차단됩니다.')
     for name in ('assets','stockPolicies','taxPolicyYears','taxPolicy','taxBasis','fvociPolicy'):
         if before.get(name)!=after.get(name):raise ValueError(f'확정 결산이 있어 {name} 변경은 별도 재개방 절차가 필요합니다.')
+    old_policies={r['effectiveYear']:r for r in before.get('fvociPolicyYears',[])}
+    new_policies={r['effectiveYear']:r for r in after.get('fvociPolicyYears',[])}
+    for year in old_policies.keys() | new_policies.keys():
+        if year<=max(closed) and old_policies.get(year)!=new_policies.get(year):
+            raise ValueError('확정 결산에 영향을 주는 FVOCI 사업연도별 정책은 변경·삭제·소급 추가할 수 없습니다.')
     if before.get('taxAdjustmentScope')!=after.get('taxAdjustmentScope'):
         years={(s.get('taxAdjustmentScope') or {}).get('year') for s in (before,after)}
         if any(str(year) in {str(y) for y in closed} for year in years):

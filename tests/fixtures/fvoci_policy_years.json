@@ -1,0 +1,11 @@
+{
+  "description": "Manual checkpoints for annual disposal-presentation policy. Earlier retained disposal OCI is never swept into later transfers.",
+  "cases": [
+    {"id":"retain_then_transfer","baseline":"TRANSFER","policies":[[2026,"RETAIN"],[2027,"TRANSFER"]],
+     "checks":[[2025,10,140,100,-40,40,40,0],[2026,6,84,60,-24,56,24,32],[2027,0,0,0,0,32,0,32]],
+     "transfers":[[2,0,"RETAIN"],[3,30,"TRANSFER"]]},
+    {"id":"transfer_then_retain","baseline":"RETAIN","policies":[[2026,"TRANSFER"],[2027,"RETAIN"]],
+     "checks":[[2025,10,140,100,-40,40,40,0],[2026,6,84,60,-24,24,24,0],[2027,0,0,0,0,30,0,30]],
+     "transfers":[[2,32,"TRANSFER"],[3,0,"RETAIN"]]}
+  ]
+}

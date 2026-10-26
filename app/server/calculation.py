@@ -13,6 +13,7 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP, localcontext
 from fractions import Fraction
 
 from .validation_engine import fiscal_year, year_end
+from .fvoci_policy import policy_schedule, resolve_policy
 
 ENGINE_VERSION = 'decimal-v1'
 CENT = Decimal('0.01')
@@ -64,9 +65,7 @@ def _calculate(state, as_of):
     if not 1 <= month <= 12:
         raise ValueError('결산월 오류')
     fy = lambda day: fiscal_year(day, month)
-    policy = (state.get('fvociPolicy') or {}).get('disposal', 'TRANSFER')
-    if policy not in ('TRANSFER', 'RETAIN'):
-        raise ValueError('FVOCI 처분 정책 오류')
+    baseline_policy, policy_rows = policy_schedule(state)
     assets, balances, groups = {}, {}, defaultdict(list)
     for asset in state.get('assets', []):
         aid = int(asset['id'])
@@ -135,6 +134,7 @@ def _calculate(state, as_of):
     lots = defaultdict(dict)
     ledger = []
     for e in sorted(events, key=lambda e: (e['date'], e['kind'] == 'valuation', e['id'])):
+        policy = resolve_policy(baseline_policy,policy_rows,fy(e['date']))
         aid = e['assetId']
         asset, current = assets[aid], balances[aid]
         code, classification = asset['stock_code'], asset['classification']

@@ -203,18 +203,35 @@ function fiscalYear(date){return InvestmentEngine.fiscalYear(date,db.fiscalEndMo
 function fiscalEndDate(year){return InvestmentEngine.fiscalEndDate(year,db.fiscalEndMonth||12)}
 function calculation(asOf='9999-12-31'){return InvestmentEngine.calculate(db,asOf)}
 function renderFvociPolicy(){
- if(!$('fvociPolicyPanel'))$('settings').insertAdjacentHTML('beforeend',`<div class="panel" id="fvociPolicyPanel"><h2>FVOCI 누적 OCI 처분 정책</h2><p class="hint">처분일까지의 공정가치 변동은 OCI에 인식합니다. 여기서는 처분한 주식의 누적 OCI를 자본 내에서 대체할지 선택합니다. 정책 변경은 과거 계산에도 적용됩니다.</p><div class="formgrid"><div class="field"><label>누적 OCI 처리</label><select id="fvociDisposal"><option value="TRANSFER">이익잉여금으로 대체</option><option value="RETAIN">OCI에 유지</option></select></div><div class="field"><label>정책 확인자</label><input id="fvociReviewer"></div><div class="field full"><label>선택·변경 사유</label><input id="fvociReason"></div></div><button class="btn" onclick="saveFvociPolicy()">정책 저장</button><p id="fvociPolicyStatus" class="hint"></p><div id="fvociPolicyHistory"></div></div>`);
+ if(!$('fvociPolicyPanel'))$('settings').insertAdjacentHTML('beforeend',`<div class="panel" id="fvociPolicyPanel"><h2>FVOCI 누적 OCI 처분 정책 · 사업연도별 관리</h2><p class="hint">선택한 시작 사업연도부터 다음 정책 전까지의 처분에 적용합니다. 과거 확정 결산은 변경하지 않습니다. 예전에 처분하고 OCI에 유지한 금액을 새 정책으로 자동 대체하지 않습니다. 법적·회계상 정책 변경의 적정성은 별도 검토가 필요합니다.</p><div class="formgrid"><div class="field"><label>적용 시작 사업연도 (종료연도 기준)</label><input id="fvociEffectiveYear" type="number" min="1900" max="2200" onchange="loadFvociPolicyYear()"></div><div class="field"><label>누적 OCI 처리</label><select id="fvociDisposal"><option value="TRANSFER">이익잉여금으로 대체</option><option value="RETAIN">OCI에 유지</option></select></div><div class="field"><label>정책 확인자</label><input id="fvociReviewer"></div><div class="field full"><label>선택·변경 사유 및 적용 근거</label><input id="fvociReason"></div></div><button class="btn" onclick="saveFvociPolicy()">사업연도별 정책 저장</button><p id="fvociPolicyStatus" class="hint"></p><div id="fvociPolicyYears"></div><h4>정책 변경 이력</h4><div id="fvociPolicyHistory"></div></div>`);
+ if(!$('fvociEffectiveYear').value){$('fvociEffectiveYear').value=Number(fiscalYear(today()));loadFvociPolicyYear();}
  const p=db.fvociPolicy||{};
- $('fvociDisposal').value=p.disposal||'TRANSFER';$('fvociReviewer').value=p.reviewer||'';$('fvociReason').value=p.reason||'';
- $('fvociPolicyStatus').textContent=p.disposal?'저장된 회사 정책을 적용합니다.':'정책 미확인: 기존 데이터 호환을 위해 이익잉여금 대체를 기본 적용 중입니다. 회사 정책을 확인하고 저장하세요.';
- $('fvociPolicyHistory').innerHTML=table(['저장일시','정책','확인자','사유'],(p.history||[]).map(x=>[esc(x.at),x.disposal==='TRANSFER'?'이익잉여금 대체':'OCI 유지',esc(x.reviewer),esc(x.reason)]));
+ const rows=[...(db.fvociPolicyYears||[])].sort((a,b)=>a.effectiveYear-b.effectiveYear);
+ $('fvociPolicyStatus').textContent=`연도별 정책 이전 기간은 기존 공통 정책 ${p.disposal==='RETAIN'?'OCI 유지':'이익잉여금 대체'}를 유지합니다.${p.disposal?'':' 기존 공통 정책은 미확인 기본값입니다.'} 공통 정책 값과 과거 이력은 덮어쓰지 않습니다.`;
+ $('fvociPolicyYears').innerHTML=table(['적용 시작 사업연도','정책','확인자','사유','선택'],rows.map(x=>[x.effectiveYear,x.disposal==='TRANSFER'?'이익잉여금 대체':'OCI 유지',esc(x.reviewer),esc(x.reason),`<button class="btn" onclick="loadFvociPolicyYear(${x.effectiveYear})">불러오기</button>`]));
+ const history=[...(p.history||[]).map(x=>({...x,period:'기존 공통 정책'})),...rows.flatMap(x=>(x.history||[x]).map(h=>({...h,period:x.effectiveYear+' 사업연도부터'})))];
+ $('fvociPolicyHistory').innerHTML=table(['저장일시','적용 기간','정책','확인자','사유'],history.map(x=>[esc(x.at),esc(x.period),x.disposal==='TRANSFER'?'이익잉여금 대체':'OCI 유지',esc(x.reviewer),esc(x.reason)]));
 }
-function saveFvociPolicy(){
+function loadFvociPolicyYear(year){
+ if(year!==undefined)$('fvociEffectiveYear').value=year;
+ const selected=Number($('fvociEffectiveYear').value);
+ const entry=(db.fvociPolicyYears||[]).find(x=>x.effectiveYear===selected);
+ $('fvociDisposal').value=InvestmentEngine.fvociPolicyForYear(db,selected);
+ $('fvociReviewer').value=entry?.reviewer||'';$('fvociReason').value=entry?.reason||'';
+}
+async function saveFvociPolicy(){
+ if(!dbReady)return notify('먼저 SQLite 연결 상태를 확인하세요.');
+ await dbSaveQueue;if(!dbReady||dbSaveFailed)return notify('이전 저장 실패를 해결한 뒤 정책을 저장하세요.');
+ const effectiveYear=Number($('fvociEffectiveYear').value);
+ if(!Number.isInteger(effectiveYear)||effectiveYear<1900||effectiveYear>2200)return notify('적용 시작 사업연도를 확인하세요.');
  const reviewer=$('fvociReviewer').value.trim(),reason=$('fvociReason').value.trim();
  if(!reviewer||!reason)return notify('정책 확인자와 선택·변경 사유를 입력하세요.');
- if(db.trades.length&&!confirm('이 정책은 기존 거래의 계산에도 적용됩니다. 변경할까요?'))return;
- const entry={disposal:$('fvociDisposal').value,reviewer,reason,at:new Date().toISOString()};
- db.fvociPolicy={...entry,history:[...(db.fvociPolicy?.history||[]),entry]};persist();notify('FVOCI 정책 저장');
+ if(!confirm(`${effectiveYear} 사업연도부터의 처분 정책을 저장할까요? 미확정 검증표는 재생성이 필요할 수 있으며 확정 결산에 영향을 주는 변경은 서버에서 차단됩니다.`))return;
+ const previous=db.fvociPolicyYears,rows=previous||[],old=rows.find(x=>x.effectiveYear===effectiveYear);
+ const entry={effectiveYear,disposal:$('fvociDisposal').value,reviewer,reason,at:new Date().toISOString()};
+ db.fvociPolicyYears=[...rows.filter(x=>x.effectiveYear!==effectiveYear),{...entry,history:[...(old?.history|| (old?[old]:[])),entry]}].sort((a,b)=>a.effectiveYear-b.effectiveYear);
+ try{queueDbSave();await dbSaveQueue;if(dbSaveFailed)throw Error('SQLite에 정책이 저장되지 않았습니다.');renderAll();notify('FVOCI 사업연도별 정책 저장 완료');}
+ catch(e){if(previous===undefined)delete db.fvociPolicyYears;else db.fvociPolicyYears=previous;renderFvociPolicy();notify('정책 저장 실패: '+e.message);}
 }
 function saveFiscalMonth(){const m=Number($('fiscalEndMonth').value);if(!Number.isInteger(m)||m<1||m>12)return notify('결산월 오류');if(db.trades.length&&!confirm('결산월 변경은 모든 과거 원가계산과 사업연도 정책 적용에 영향을 줍니다. 계속할까요?'))return;db.fiscalEndMonth=m;persist();renderEngine();notify('결산월 저장 · 모든 사업연도 재계산');}
 function computedAsset(id){return calculation().positions.find(p=>p.asset.id===Number(id))}
@@ -469,6 +486,7 @@ function showWorkpaperUI(id){
  const direction=first.direction,disposition=first.disposition;
  $('workpaperDetail').innerHTML=`<div class="panel"><h3>검증표 #${id} · ${esc(w.status)}</h3>
  <p>종목 ${esc(a.asset_name)} (${esc(a.stock_code)}) · ${esc(a.date)} · ${esc(a.event)} · ${esc(a.classification)}</p>
+ ${a.classification==='FVOCI'?`<p class="hint">FVOCI 처분 정책 귀속: ${esc(fiscalYear(a.date))} 사업연도 · ${a.fvoci_disposal_policy==='TRANSFER'?'이익잉여금 대체':a.fvoci_disposal_policy==='RETAIN'?'OCI 유지':'미기록 — 재생성 필요'}</p>`:''}
  <p class="notice">서버 독립 재계산: ${esc(a.calculation?.engine_version||'기존 검증표 — 재생성 필요')} · 원천 버전 ${esc(a.calculation?.source_revision??'—')}<br>계산 근거 ${esc(a.calculation?.digest?.slice(0,16)||'미기록')}</p>
  ${table(['회계 인식','회계 PL','세법상 손익','당기 OCI 변동','이익잉여금 대체','과세소득 조정 후보','유보 증감 후보'],[[esc(a.recognition),won(a.book_pl),won(a.tax_pl),won(a.oci_change),won(a.oci_equity_transfer),won(a.candidate_adjustment),won(a.reserve_change)]])}
  <p class="${a.adjustment_plan?.status==='REVIEW_REQUIRED'?'notice':'alert'}">조정 규칙 ${esc(a.adjustment_plan?.version||'미기록 — 재생성 필요')} · ${a.adjustment_plan?.status==='REVIEW_REQUIRED'?'적용범위 확인됨 · 개별 검토 후 승인':'별도 법령 검토 필요'}<br>${(a.adjustment_plan?.reasons||[]).map(esc).join('<br>')}</p>
