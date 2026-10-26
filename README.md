@@ -1,5 +1,5 @@
 # 투자주식 회계·세무조정 검토 시스템
-> Investment Tax Reconciliation — local prototype (v6)
+> Investment Tax Reconciliation 
 
 **회계 계산을 자동화하되, 세무조정의 법적 판단과 최종 반영은 사람이 통제하는 검토 중심 웹앱.**
 
