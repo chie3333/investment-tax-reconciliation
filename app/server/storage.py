@@ -58,7 +58,7 @@ def _records(state):
     for name in ('taxBasis', 'stockPolicies'):
         for key, value in (state.get(name) or {}).items():
             out[(name, str(key))] = value
-    for name in ('taxPolicy', 'fiscalEndMonth', 'fvociPolicy', 'ids'):
+    for name in ('taxPolicy', 'fiscalEndMonth', 'fvociPolicy', 'taxAdjustmentScope', 'ids'):
         out[('settings', name)] = state.get(name)
     return out
 
@@ -71,6 +71,8 @@ def save_state(state, expected_revision):
     for name in COLLECTIONS:
         if not isinstance(state.get(name), list):
             raise ValueError(f'{name}은 배열이어야 합니다.')
+    if 'taxAdjustmentScope' in state and not isinstance(state['taxAdjustmentScope'],dict):
+        raise ValueError('세무조정 적용범위는 객체여야 합니다.')
     now = datetime.now(timezone.utc).isoformat()
     with LOCK, connect() as conn:
         conn.execute('BEGIN IMMEDIATE')

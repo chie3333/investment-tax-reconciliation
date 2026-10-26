@@ -20,6 +20,9 @@ class WorkpaperTests(unittest.TestCase):
                 self.assertEqual(wp['status'],'DRAFT')
                 adj=[{'direction':'손금산입','disposition':'△유보','amount':'200','reserve_movement':'-200','legal_basis':'검토된 적용 규정'}]
                 with self.assertRaises(ValueError):approve(wp['id'],'검토자','검토 근거를 충분히 기재',adj,False)
+                # A reserve-only valuation row incorrectly reduces taxable income.
+                with self.assertRaisesRegex(ValueError,'과세소득'):approve(wp['id'],'검토자','자본 연결 행 누락은 차단되어야 함',adj,True)
+                adj.append({'direction':'익금산입','disposition':'기타','amount':'200','reserve_movement':'0','legal_basis':'OCI 자본 연결 검토'})
                 self.assertEqual(approve(wp['id'],'검토자','검토 근거를 충분히 기재',adj,True)['reserve_posted'],1)
                 from app.server.closing import summary
                 self.assertEqual(summary(2026)['movements']['1|FVOCI_VALUATION'],'-200')

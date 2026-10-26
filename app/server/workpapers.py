@@ -6,6 +6,7 @@ from .storage import connect, LOCK, read_state
 from .closing import setup as setup_closing, _amount
 from .validation_engine import fiscal_year
 from .calculation import calculate_year, candidates_for_year, compare_candidate, evidence, number
+from .adjustment_rules import build_plan, verify_adjustments
 
 
 def setup(c):
@@ -68,6 +69,8 @@ def generate(year, revision, candidates=None):
         state=current['state'] or {}
         calculated=calculate_year(state,year)
         canonical=candidates_for_year(calculated,year,int(state.get('fiscalEndMonth') or 12))
+        for item in canonical:
+            item['adjustment_plan']=build_plan(state,year,item)
         if candidates is not None:
             expected={(x['source_type'],str(x['source_id']),str(x['asset_id'])):x for x in canonical}
             seen=set()
@@ -80,7 +83,11 @@ def generate(year, revision, candidates=None):
         if c.execute('SELECT 1 FROM fiscal_closes WHERE fiscal_year=?',(year,)).fetchone():raise ValueError('확정 사업연도에는 검증표를 생성할 수 없습니다.')
         # Retain obsolete drafts as history; they must not block a fresh review cycle.
         for old in c.execute("SELECT id,source_revision,candidate_json FROM tax_workpapers WHERE fiscal_year=? AND status='DRAFT'",(year,)).fetchall():
-            if old['source_revision']!=revision or json.loads(old['candidate_json']).get('calculation')!=evidence(calculated,revision):
+            saved=json.loads(old['candidate_json'])
+            fresh=next((x for x in canonical if (x['source_type'],x['source_id'],x['asset_id']) ==
+                        (saved.get('source_type'),saved.get('source_id'),saved.get('asset_id'))),None)
+            if (old['source_revision']!=revision or saved.get('calculation')!=evidence(calculated,revision)
+                    or fresh is None or saved.get('adjustment_plan')!=fresh['adjustment_plan']):
                 c.execute("UPDATE tax_workpapers SET status='SUPERSEDED' WHERE id=?",(old['id'],))
                 c.execute('INSERT INTO tax_workpaper_events(workpaper_id,event,detail_json,recorded_at) VALUES(?,?,?,?)',(old['id'],'SUPERSEDED','{}',now))
         count=0
@@ -111,7 +118,7 @@ def generate(year, revision, candidates=None):
     return {'created':count,'year':year,'source_revision':revision,'calculation':evidence(calculated,revision)}
 
 
-def verify_candidate(item, calculated, revision, year, month):
+def verify_candidate(item, calculated, revision, year, month, state=None):
     if item.get('calculation')!=evidence(calculated,revision):
         raise ValueError('서버 재계산 근거가 없거나 변경된 검증표입니다. 기존 승인을 취소하고 재생성하세요.')
     expected=next((row for row in candidates_for_year(calculated,year,month)
@@ -120,6 +127,9 @@ def verify_candidate(item, calculated, revision, year, month):
     compare_candidate(item,expected)
     if item.get('allocation_effects')!=expected['allocation_effects'] or item.get('fvoci_disposal_policy')!=expected['fvoci_disposal_policy']:
         raise ValueError('서버 재계산 불일치: 원가 배분 또는 OCI 정책')
+    expected['adjustment_plan']=build_plan(state or {},year,expected)
+    if item.get('adjustment_plan')!=expected['adjustment_plan']:
+        raise ValueError('세무조정 규칙 근거가 없거나 변경되었습니다. 기존 승인 취소 후 재생성하세요.')
     return expected
 
 
@@ -176,11 +186,12 @@ def approve(workpaper_id,reviewer,note,adjustments,acknowledge):
         item=json.loads(r['candidate_json']);checks=_checks(current['state'] or {},r['fiscal_year'],item)
         if not all(x['passed'] for x in checks if not x.get('manual')):raise ValueError('원천 검증을 통과하지 못했습니다.')
         calculated=calculate_year(current['state'] or {},r['fiscal_year'])
-        expected=verify_candidate(item,calculated,current['revision'],r['fiscal_year'],int((current['state'] or {}).get('fiscalEndMonth') or 12))
+        expected=verify_candidate(item,calculated,current['revision'],r['fiscal_year'],int((current['state'] or {}).get('fiscalEndMonth') or 12),current['state'])
         verify_reserves(prepared,expected)
+        verify_adjustments(prepared,expected,expected['adjustment_plan'])
         # A FVOCI disposal must explicitly document its reserve release, rather than
         # silently treating tax profit or OCI equity transfer as a reserve reversal.
-        if not prepared and any(_decimal(item.get(k,0))!=0 for k in ('candidate_adjustment','reserve_change','oci_change','tax_pl')):
+        if not prepared and any(_decimal(item.get(k,0))!=0 for k in ('candidate_adjustment','reserve_change','oci_change')):
             raise ValueError('조정 후보가 존재하므로 세무조정 행 없이 승인할 수 없습니다.')
         if item.get('classification')=='FVOCI' and item.get('event')=='SELL':
             if _decimal(item.get('reserve_change',0))!=0 and not any(a['disposition'] in ('유보','△유보') for a in prepared):
@@ -192,7 +203,8 @@ def approve(workpaper_id,reviewer,note,adjustments,acknowledge):
             target=next(x for x in current['state']['assets'] if str(x['id'])==target_id)
             c.execute('INSERT INTO reserve_entries(fiscal_year,asset_id,adjustment_key,source_ref,amount,memo,recorded_at) VALUES(?,?,?,?,?,?,?)',
                       (r['fiscal_year'],target_id,f'{target["classification"]}_{item["source_type"].upper()}',source,a['reserve_movement'],str(note),now))
-        approval={'adjustments':prepared,'acknowledged':True,'calculation':evidence(calculated,current['revision'])}
+        approval={'adjustments':prepared,'acknowledged':True,'calculation':evidence(calculated,current['revision']),
+                  'adjustment_plan':expected['adjustment_plan']}
         c.execute('UPDATE tax_workpapers SET status=?,reviewer=?,review_note=?,approved_json=?,approved_at=? WHERE id=?',
                   ('APPROVED',str(reviewer),str(note),json.dumps(approval,ensure_ascii=False),now,r['id']))
         c.execute('INSERT INTO tax_workpaper_events(workpaper_id,event,detail_json,recorded_at) VALUES(?,?,?,?)',

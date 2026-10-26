@@ -112,10 +112,14 @@ def close_year(year, reviewer, note, acknowledge_warnings=False, positions=None)
         for wp in candidates:
             if wp['status']!='APPROVED':continue
             candidate=json.loads(wp['candidate_json'])
-            expected=verify_candidate(candidate,calculated,current['revision'],year,month)
+            expected=verify_candidate(candidate,calculated,current['revision'],year,month,st)
             approval=json.loads(wp['approved_json'])
             if approval.get('calculation')!=proof:raise ValueError('서버 재계산 근거가 없는 승인입니다. 취소 후 재승인하세요.')
             verify_reserves(approval['adjustments'],expected)
+            from .adjustment_rules import verify_adjustments
+            if approval.get('adjustment_plan')!=expected['adjustment_plan']:
+                raise ValueError('승인된 조정 규칙 근거가 없습니다. 취소 후 재승인하세요.')
+            verify_adjustments(approval['adjustments'],expected,expected['adjustment_plan'])
             postings={f'WORKPAPER:{wp["id"]}:{i}':a for i,a in enumerate(approval['adjustments']) if a['disposition'] in ('유보','△유보')}
             actual_postings=list(c.execute('SELECT * FROM reserve_entries WHERE source_ref LIKE ?',(f'WORKPAPER:{wp["id"]}:%',)))
             if len(actual_postings)!=len(postings):raise ValueError('승인 유보 전기 이력 불일치')
@@ -194,6 +198,10 @@ def guard_state_changes(before,after,connection=None):
                     if fy in closed:raise ValueError(f'{fy}사업연도는 결산 확정되어 {name} 변경이 차단됩니다.')
     for name in ('assets','stockPolicies','taxPolicyYears','taxPolicy','taxBasis','fvociPolicy'):
         if before.get(name)!=after.get(name):raise ValueError(f'확정 결산이 있어 {name} 변경은 별도 재개방 절차가 필요합니다.')
+    if before.get('taxAdjustmentScope')!=after.get('taxAdjustmentScope'):
+        years={(s.get('taxAdjustmentScope') or {}).get('year') for s in (before,after)}
+        if any(str(year) in {str(y) for y in closed} for year in years):
+            raise ValueError('확정된 사업연도의 세무조정 적용범위 변경은 별도 재개방 절차가 필요합니다.')
 
 
 def _fiscal_end_date(year,month):

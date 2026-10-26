@@ -8,7 +8,7 @@ const script = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)]
  .map(m => m[1]).find(s => s.includes('function reserveItemLabel('));
 const assets = [{id:1,asset_name:'삼성전자',classification:'FVOCI'},
  {id:2,asset_name:'<img src=x onerror=alert(1)>',classification:'FVPL'}];
-const context = vm.createContext({getAsset:id=>assets.find(a=>a.id===Number(id)),
+const context = vm.createContext({document:{readyState:'loading',addEventListener(){}},getAsset:id=>assets.find(a=>a.id===Number(id)),
  esc:s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))});
 new vm.Script(script).runInContext(context);
 const label = key=>context.reserveItemLabel(key);

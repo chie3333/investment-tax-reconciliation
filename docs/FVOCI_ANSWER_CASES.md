@@ -158,6 +158,8 @@ python3 -m unittest tests.python.test_fvoci_answers -v
 
 ## 10. 확인한 근거와 남은 판단
 
+2026 일반 내국법인의 국내 상장 보통주에 대한 원인별 세무조정 행은 [별도 법령 검토·조건부 정답표](TAX_ADJUSTMENT_RULES_2026.md)에 추가했다. 아래 OCI 계산의 정답과 법적 소득처분 판단은 구분한다.
+
 1. [IFRS Foundation, IFRS 9 사후검토 자료](https://www.ifrs.org/content/dam/ifrs/project/pir-ifrs-9/rfi2021-2-pir-ifrs9.pdf), 17~18쪽: FVOCI 지분상품의 공정가치 변동 및 처분 시 당기손익 재분류 금지에 관한 설명.
 2. [XRB, NZ IFRS 9](https://standards.xrb.govt.nz/standards-navigator/nz-ifrs-9/?version=213), 5.7.5 및 B5.7.1: 누적손익을 자본 내에서 대체할 수 있음을 확인하는 공개 기준서. IFRS 대응 조문 확인용이며 한국 기준서 원문을 대체하지 않는다.
 3. [국가법령정보센터, 법인세법 시행령 제75조](https://www.law.go.kr/lsLinkCommonInfo.do?lsJoLnkSeq=1027290403), 시행 2026-10-01 표시 본문: 신고한 유가증권 평가방법과 총평균법·이동평균법 조문 확인.
