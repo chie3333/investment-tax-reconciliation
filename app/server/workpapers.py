@@ -59,6 +59,10 @@ def _checks(state, year, item):
 
 
 def generate(year, revision, candidates=None):
+    from .storage import using_normalized
+    if using_normalized():
+        from app.database.services import generate as normalized
+        return normalized(year, revision, candidates)
     year=int(year)
     if not 1900<=year<=2200 or (candidates is not None and (not isinstance(candidates,list) or len(candidates)>2000)):raise ValueError('사업연도 또는 후보 건수 오류')
     now=datetime.now(timezone.utc).isoformat()
@@ -145,6 +149,10 @@ def verify_reserves(adjustments, expected):
 
 
 def list_workpapers(year):
+    from .storage import using_normalized
+    if using_normalized():
+        from app.database.services import list_workpapers as normalized
+        return normalized(year)
     with LOCK,connect() as c:
         setup(c)
         rows=[dict(r) for r in c.execute('SELECT * FROM tax_workpapers WHERE fiscal_year=? ORDER BY id',(int(year),))]
@@ -156,6 +164,10 @@ def list_workpapers(year):
 
 
 def approve(workpaper_id,reviewer,note,adjustments,acknowledge):
+    from .storage import using_normalized
+    if using_normalized():
+        from app.database.services import approve as normalized
+        return normalized(workpaper_id, reviewer, note, adjustments, acknowledge)
     if not str(reviewer).strip() or not str(note).strip() or len(str(note))<10:raise ValueError('검토자와 구체적인 검토 의견(10자 이상)이 필요합니다.')
     if acknowledge is not True:raise ValueError('법령 적용 및 계산 검토 확인이 필요합니다.')
     if not isinstance(adjustments,list) or len(adjustments)>20:raise ValueError('세무조정 행 형식 오류')
@@ -214,6 +226,10 @@ def approve(workpaper_id,reviewer,note,adjustments,acknowledge):
 
 
 def cancel_approval(workpaper_id, actor, reason):
+    from .storage import using_normalized
+    if using_normalized():
+        from app.database.services import cancel_approval as normalized
+        return normalized(workpaper_id, actor, reason)
     """Append compensating reserve movements; never delete approved evidence."""
     if not str(actor).strip() or len(str(reason).strip())<10:
         raise ValueError('정정 담당자와 정정 사유(10자 이상)가 필요합니다.')

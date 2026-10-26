@@ -3,6 +3,7 @@ import json
 import os
 import sqlite3
 import threading
+from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -26,6 +27,15 @@ def connect():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH, timeout=10, factory=ManagedConnection)
     conn.row_factory = sqlite3.Row
+    from app.database import APPLICATION_ID, SCHEMA_VERSION
+    if (conn.execute('PRAGMA application_id').fetchone()[0]==APPLICATION_ID or
+            conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='schema_metadata'").fetchone()):
+        if conn.execute('PRAGMA user_version').fetchone()[0] != SCHEMA_VERSION:
+            conn.close()
+            raise ValueError('지원하지 않는 정규화 DB 버전입니다. 기존 파일을 보존하고 현재 버전의 새 DB를 지정하세요.')
+        from app.database.bootstrap import configure
+        configure(conn)
+        return conn
     conn.execute('PRAGMA busy_timeout=10000')
     conn.execute('PRAGMA journal_mode=WAL')
     conn.execute('CREATE TABLE IF NOT EXISTS workspace (id INTEGER PRIMARY KEY CHECK(id=1), revision INTEGER NOT NULL, payload TEXT NOT NULL, updated_at TEXT NOT NULL)')
@@ -37,8 +47,17 @@ def connect():
     return conn
 
 
+def using_normalized():
+    if not DB_PATH.exists():return False
+    from app.database.repository import is_normalized
+    with closing(sqlite3.connect(f'{DB_PATH.resolve().as_uri()}?mode=ro',uri=True)) as c:
+        return is_normalized(c)
+
+
 def read_state(connection=None):
     if connection is not None:
+        from app.database import repository
+        if repository.is_normalized(connection):return repository.read_state(connection)
         row = connection.execute('SELECT revision,payload,updated_at FROM workspace WHERE id=1').fetchone()
         return {'revision': row['revision'], 'state': json.loads(row['payload']), 'updated_at': row['updated_at']} if row else {'revision': 0, 'state': None, 'updated_at': None}
     with LOCK, connect() as conn:
@@ -78,6 +97,10 @@ def save_state(state, expected_revision):
     now = datetime.now(timezone.utc).isoformat()
     with LOCK, connect() as conn:
         conn.execute('BEGIN IMMEDIATE')
+        from app.database import repository
+        if repository.is_normalized(conn):
+            try:return repository.save_state(conn,state,expected_revision)
+            except sqlite3.IntegrityError as exc:raise ValueError('DB 무결성 검사: '+str(exc)) from exc
         row = conn.execute('SELECT revision,payload FROM workspace WHERE id=1').fetchone()
         revision = row['revision'] if row else 0
         if revision != expected_revision:
@@ -105,12 +128,17 @@ def save_state(state, expected_revision):
 
 def read_audit(limit=100):
     with LOCK, connect() as conn:
+        from app.database.repository import is_normalized
+        if is_normalized(conn):
+            return [dict(r) for r in conn.execute('SELECT audit_id AS id,recorded_at,source_revision AS revision,entity_type AS entity,entity_key,action,before_json,after_json,actor FROM audit_log WHERE company_id=1 ORDER BY audit_id DESC LIMIT ?',(min(max(int(limit),1),500),))]
         rows = conn.execute('SELECT * FROM audit_log ORDER BY id DESC LIMIT ?', (min(max(int(limit), 1), 500),)).fetchall()
         return [dict(r) for r in rows]
 
 
 def save_validation(result, source_revision, connection=None):
     if connection is not None:
+        from app.database.repository import is_normalized
+        if is_normalized(connection):raise ValueError('정규화 DB 검증은 서버 독립 재계산 서비스를 사용하세요.')
         connection.execute('''CREATE TABLE IF NOT EXISTS validation_runs
             (id INTEGER PRIMARY KEY AUTOINCREMENT, recorded_at TEXT NOT NULL,
              source_revision INTEGER NOT NULL, fiscal_year INTEGER NOT NULL, result_json TEXT NOT NULL)''')
@@ -123,6 +151,9 @@ def save_validation(result, source_revision, connection=None):
 
 def read_validation_runs(limit=30):
     with LOCK, connect() as conn:
+        from app.database.repository import is_normalized
+        if is_normalized(conn):
+            return [dict(r) for r in conn.execute('SELECT v.validation_id AS id,v.created_at AS recorded_at,v.source_revision,y.fiscal_year,v.result_json FROM validation_runs v JOIN fiscal_years y ON y.fiscal_year_id=v.fiscal_year_id WHERE v.company_id=1 ORDER BY v.validation_id DESC LIMIT ?',(limit,))]
         conn.execute('''CREATE TABLE IF NOT EXISTS validation_runs
             (id INTEGER PRIMARY KEY AUTOINCREMENT, recorded_at TEXT NOT NULL,
              source_revision INTEGER NOT NULL, fiscal_year INTEGER NOT NULL, result_json TEXT NOT NULL)''')
@@ -140,6 +171,9 @@ def _review_tables(conn):
     conn.commit()
 
 def save_issue_review(issue_key, status, reason, run_id):
+    if using_normalized():
+        from app.database.services import save_issue_review as normalized
+        return normalized(issue_key,status,reason,run_id)
     if status not in ('OPEN','REVIEWING','RESOLVED','ACCEPTED'):raise ValueError('상태 오류')
     if not issue_key or len(issue_key)>200 or not reason or len(reason)>2000:raise ValueError('대상과 처리 사유가 필요합니다.')
     with LOCK,connect() as conn:
@@ -155,6 +189,9 @@ def save_issue_review(issue_key, status, reason, run_id):
         return {'issue_key':issue_key,'status':status}
 
 def read_issue_reviews():
+    if using_normalized():
+        from app.database.services import read_issue_reviews as normalized
+        return normalized()
     with LOCK,connect() as conn:
         _review_tables(conn)
         return {'reviews':[dict(r) for r in conn.execute('SELECT * FROM issue_reviews ORDER BY updated_at DESC')], 'events':[dict(r) for r in conn.execute('SELECT * FROM issue_review_events ORDER BY id DESC LIMIT 200')]}

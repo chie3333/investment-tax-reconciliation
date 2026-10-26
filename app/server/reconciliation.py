@@ -30,6 +30,10 @@ def validation_result(state, year, calculated, browser=None, connection=None):
 
 
 def run_validation(year, revision, browser=None):
+    from .storage import using_normalized
+    if using_normalized():
+        from app.database.services import run_validation as normalized
+        return normalized(year, revision, browser)
     year = int(year)
     if not 1900 <= year <= 2200:
         raise ValueError('사업연도 범위 오류')

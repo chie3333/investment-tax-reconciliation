@@ -28,6 +28,7 @@ dbCover.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(20,25
 dbCover.textContent='SQLite 데이터베이스 연결 중…';
 document.body.appendChild(dbCover);
 function dbStatus(message){const el=$('dbStatus');if(el)el.textContent=message;}
+let dbStorageLabel='SQLite';
 async function dbRequest(path, options){
  const r=await fetch(path,options);const d=await r.json();
  if(!r.ok)throw Error(d.error||'서버 요청 실패');
@@ -38,7 +39,7 @@ function queueDbSave(){
  const snapshot=JSON.parse(JSON.stringify(db));
  dbSaveQueue=dbSaveQueue.then(async()=>{
   const result=await dbRequest('/api/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({state:snapshot,expected_revision:dbRevision})});
-  dbRevision=result.revision;dbSaveFailed=false;dbStatus('SQLite 저장 완료 · 버전 '+dbRevision);
+  dbRevision=result.revision;dbSaveFailed=false;dbStatus(dbStorageLabel+' 저장 완료 · 버전 '+dbRevision);
  }).catch(err=>{
   dbSaveFailed=true;dbStatus('저장 실패: '+err.message);
   notify('SQLite 저장 실패. 페이지를 닫지 말고 데이터를 JSON으로 백업하세요.');
@@ -50,6 +51,7 @@ async function initDatabase(){
  try{
   const result=await dbRequest('/api/state');
   dbRevision=result.revision;
+  dbStorageLabel=result.backend==='normalized'?'SQLite(종목·거래·평가 분리)':'SQLite · 기존 저장 방식';
   if(result.state){
    db={...initial(),...result.state};
   }else{
@@ -62,7 +64,7 @@ async function initDatabase(){
   }
   dbReady=true;renderAll();if(typeof syncTaxRuleScopeUI==='function')syncTaxRuleScopeUI();
   if(!result.state)queueDbSave();
-  dbStatus('SQLite 연결됨 · 버전 '+dbRevision);if($('validateYear'))$('validateYear').value=fiscalYear(today());
+  dbStatus(dbStorageLabel+' 연결됨 · 버전 '+dbRevision);if($('validateYear'))$('validateYear').value=fiscalYear(today());
   dbCover.remove();
  }catch(err){
   dbStatus('SQLite 연결 실패: '+err.message);

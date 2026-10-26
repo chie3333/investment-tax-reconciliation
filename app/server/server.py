@@ -197,6 +197,9 @@ class Handler(SimpleHTTPRequestHandler):
 
 
 def main():
+    from . import storage
+    from app.database.bootstrap import create_database
+    if not storage.DB_PATH.exists():create_database(storage.DB_PATH)
     port = int(os.environ.get('PORT', '8000'))
     print(f'Open http://127.0.0.1:{port}/  (KRX key configured: {bool(os.environ.get("KRX_API_KEY"))})')
     ThreadingHTTPServer(('127.0.0.1', port), Handler).serve_forever()

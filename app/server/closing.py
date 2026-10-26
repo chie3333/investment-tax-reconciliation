@@ -64,6 +64,10 @@ def add_entry(year, asset_id, adjustment_key, source_ref, amount, memo):
 
 
 def summary(year):
+    from .storage import using_normalized
+    if using_normalized():
+        from app.database.services import summary as normalized
+        return normalized(year)
     year=int(year)
     with LOCK,connect() as c:
         setup(c)
@@ -76,6 +80,10 @@ def summary(year):
 
 
 def close_year(year, reviewer, note, acknowledge_warnings=False, positions=None):
+    from .storage import using_normalized
+    if using_normalized():
+        from app.database.services import close_year as normalized
+        return normalized(year, reviewer, note, acknowledge_warnings, positions)
     year=int(year)
     if not str(reviewer).strip() or not str(note).strip():raise ValueError('확정자와 검토 메모가 필요합니다.')
     with LOCK,connect() as c:
@@ -179,11 +187,14 @@ def guard_state_changes(before,after,connection=None):
     """Reject editing historical economic records once their fiscal year is closed."""
     if connection is None:
         with connect() as c:
-            setup(c)
-            closed=[r[0] for r in c.execute('SELECT fiscal_year FROM fiscal_closes')]
+            from app.database.repository import is_normalized
+            if not is_normalized(c):setup(c)
+            return guard_state_changes(before,after,c)
     else:
         closed=[r[0] for r in connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='fiscal_closes'")]
-        closed=[r[0] for r in connection.execute("SELECT fiscal_year FROM fiscal_closes")] if closed else []
+        from app.database.repository import is_normalized
+        query=("SELECT y.fiscal_year FROM fiscal_closes z JOIN fiscal_years y ON y.fiscal_year_id=z.fiscal_year_id" if is_normalized(connection) else "SELECT fiscal_year FROM fiscal_closes")
+        closed=[r[0] for r in connection.execute(query)] if closed else []
     if not closed:return
     month=int(before.get('fiscalEndMonth') or 12)
     if after.get('fiscalEndMonth',12)!=month:raise ValueError('확정된 결산이 있어 결산월을 변경할 수 없습니다.')
