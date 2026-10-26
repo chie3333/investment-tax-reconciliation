@@ -6,6 +6,7 @@ from datetime import date, timedelta
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from .storage import read_state, save_state, read_audit, save_validation, read_validation_runs, save_issue_review, read_issue_reviews
 from .validation_engine import validate
+from .reconciliation import run_validation
 from .closing import summary as closing_summary, add_entry as add_reserve_entry, close_year
 from .workpapers import generate as generate_workpapers, list_workpapers, approve as approve_workpaper, cancel_approval as cancel_workpaper
 from pathlib import Path
@@ -102,7 +103,7 @@ class Handler(SimpleHTTPRequestHandler):
                 if size<=0 or size>500_000:return self.send_json({'error':'요청 크기 오류'},413)
                 payload=json.loads(self.rfile.read(size))
                 if path.endswith('/generate'):
-                    result=generate_workpapers(payload['year'],payload['expected_revision'],payload['candidates'])
+                    result=generate_workpapers(payload['year'],payload['expected_revision'],payload.get('candidates'))
                 elif path.endswith('/cancel'):
                     result=cancel_workpaper(payload['id'],payload['reviewer'],payload['reason'])
                 else:
@@ -137,8 +138,7 @@ class Handler(SimpleHTTPRequestHandler):
                     return self.send_json({'error':'저장 버전이 달라 검증을 중단했습니다.'},409)
                 year=int(payload['year'])
                 if year<1900 or year>2200:raise ValueError('사업연도 범위 오류')
-                result=validate(current['state'] or {},year,payload.get('calculated'))
-                result['run_id']=save_validation(result,current['revision'])
+                result=run_validation(year,payload['expected_revision'],payload.get('calculated'))
                 return self.send_json(result)
             except (ValueError,TypeError,KeyError) as exc:return self.send_json({'error':str(exc)},400)
         if urlparse(self.path).path != '/api/state':

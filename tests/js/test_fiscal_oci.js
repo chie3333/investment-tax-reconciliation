@@ -8,3 +8,9 @@ let {res,fy}=run(data,'2027-03-31');assert.equal(fy,'2027');assert.equal(res.rec
 const v=res.ledger.find(x=>x.type==='VALUATION');assert.equal(v.ociChange,50);assert.equal(v.ociTaxBridge,0);
 const full={assets:[a],trades:[{id:1,assetId:1,date:'2026-04-01',type:'BUY',qty:10,amount:100},{id:2,assetId:1,date:'2027-02-01',type:'SELL',qty:10,amount:150}],valuations:[{id:1,assetId:1,date:'2026-12-31',price:13}]};const f=run(full,'2027-03-31').res;assert.equal(f.positions[0].qty,0);assert.equal(f.positions[0].tax,0);assert.equal(f.positions[0].reserve,0);assert.equal(f.ledger.find(x=>x.type==='SELL').ociTaxBridge,50);assert.equal(f.ledger.find(x=>x.type==='SELL').adj,50);
 console.log('PASS: 3월 결산 사업연도, 통합 원가 배분, FVOCI 평가/처분 OCI 브리지, 전량 처분 잔액');
+const candidateState={fiscalEndMonth:3,...data};
+const candidates=engine.workpaperCandidates(candidateState,2027);
+assert.equal(candidates.length,3);
+assert.deepEqual(candidates,engine.workpaperCandidates(candidateState,'2027'));
+assert.ok(candidates.every(c=>engine.fiscalYear(c.date,3)==='2027'));
+assert.ok(candidates.some(c=>c.event==='BUY'&&c.allocation_effects.some(e=>e.assetId!==c.asset_id)));

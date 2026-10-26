@@ -37,10 +37,12 @@ def connect():
     return conn
 
 
-def read_state():
-    with LOCK, connect() as conn:
-        row = conn.execute('SELECT revision,payload,updated_at FROM workspace WHERE id=1').fetchone()
+def read_state(connection=None):
+    if connection is not None:
+        row = connection.execute('SELECT revision,payload,updated_at FROM workspace WHERE id=1').fetchone()
         return {'revision': row['revision'], 'state': json.loads(row['payload']), 'updated_at': row['updated_at']} if row else {'revision': 0, 'state': None, 'updated_at': None}
+    with LOCK, connect() as conn:
+        return read_state(conn)
 
 
 def _records(state):
@@ -103,15 +105,16 @@ def read_audit(limit=100):
         return [dict(r) for r in rows]
 
 
-def save_validation(result, source_revision):
-    with LOCK, connect() as conn:
-        conn.execute('''CREATE TABLE IF NOT EXISTS validation_runs
+def save_validation(result, source_revision, connection=None):
+    if connection is not None:
+        connection.execute('''CREATE TABLE IF NOT EXISTS validation_runs
             (id INTEGER PRIMARY KEY AUTOINCREMENT, recorded_at TEXT NOT NULL,
              source_revision INTEGER NOT NULL, fiscal_year INTEGER NOT NULL, result_json TEXT NOT NULL)''')
-        cursor=conn.execute('INSERT INTO validation_runs(recorded_at,source_revision,fiscal_year,result_json) VALUES(?,?,?,?)',
+        cursor=connection.execute('INSERT INTO validation_runs(recorded_at,source_revision,fiscal_year,result_json) VALUES(?,?,?,?)',
              (datetime.now(timezone.utc).isoformat(),source_revision,result['year'],json.dumps(result,ensure_ascii=False)))
-        conn.commit()
         return cursor.lastrowid
+    with LOCK, connect() as conn:
+        return save_validation(result, source_revision, conn)
 
 
 def read_validation_runs(limit=30):

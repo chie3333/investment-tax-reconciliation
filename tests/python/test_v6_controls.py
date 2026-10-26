@@ -1,55 +1,61 @@
-import os, tempfile, unittest, json
+import tempfile, unittest
 from pathlib import Path
+from app.server import storage, closing, workpapers
+from app.server.reconciliation import run_validation
+
 
 class V6Controls(unittest.TestCase):
  def setUp(self):
-  from app.server import storage, closing, workpapers
-  self.storage=storage;self.closing=closing;self.wp=workpapers
   self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
-  self.old=storage.DB_PATH;storage.DB_PATH=Path(self.tmp.name)/'t.sqlite';self.addCleanup(setattr,storage,'DB_PATH',self.old)
+  old=storage.DB_PATH;storage.DB_PATH=Path(self.tmp.name)/'test.sqlite3'
+  self.addCleanup(setattr,storage,'DB_PATH',old)
   self.state={'master':[],'assets':[{'id':1,'stock_code':'005930','classification':'FVOCI'}],
-    'trades':[{'id':1,'assetId':1,'date':'2026-01-02','type':'BUY','qty':10,'price':100,'amount':1000},
-              {'id':2,'assetId':1,'date':'2026-10-02','type':'SELL','qty':10,'price':120,'amount':1200}],
-    'valuations':[],'adjustments':[],'taxPolicyYears':[],'fiscalEndMonth':12}
+   'trades':[{'id':1,'assetId':1,'date':'2026-01-02','type':'BUY','qty':10,'price':100,'amount':1000},
+             {'id':2,'assetId':1,'date':'2026-10-02','type':'SELL','qty':10,'price':120,'amount':1200}],
+   'valuations':[{'id':1,'assetId':1,'date':'2026-06-30','price':110,'qty':10,'fairValue':1100}],
+   'adjustments':[],'taxPolicyYears':[],'fiscalEndMonth':12}
   storage.save_state(self.state,0)
-  self.candidate={'asset_id':1,'classification':'FVOCI','source_type':'trade','source_id':2,'event':'SELL','date':'2026-10-02','book_pl':0,'tax_pl':200,'oci_change':0,'candidate_adjustment':200,'reserve_change':-100,'oci_equity_transfer':0}
-  self.wp.generate(2026,1,[self.candidate]);self.id=self.wp.list_workpapers(2026)['items'][0]['id']
- def adjustments(self):return [dict(direction='익금산입',disposition='기타',amount='200',reserve_movement='0',legal_basis='검토 완료'),dict(direction='손금산입',disposition='△유보',amount='100',reserve_movement='-100',legal_basis='유보 환입 검토')]
- def approve(self):return self.wp.approve(self.id,'reviewer','근거 확인 후 승인함',self.adjustments(),True)
+  workpapers.generate(2026,1)
+  self.id=next(w['id'] for w in workpapers.list_workpapers(2026)['items'] if w['candidate']['event']=='SELL')
+  self.val_id=next(w['id'] for w in workpapers.list_workpapers(2026)['items'] if w['candidate']['event']=='VALUATION')
+  self.positions=[{'assetId':1,'qty':0,'book':0,'tax':0}]
+ def approve_sale(self):
+  rows=[dict(direction='익금산입',disposition='기타',amount='100',reserve_movement='0',legal_basis='처분 검토'),
+        dict(direction='익금산입',disposition='유보',amount='100',reserve_movement='100',legal_basis='장부 차이 환입')]
+  return workpapers.approve(self.id,'reviewer','원천 자료와 유보 환입 확인함',rows,True)
+ def approve_valuation(self):
+  rows=[dict(direction='익금산입',disposition='기타',amount='100',reserve_movement='0',legal_basis='OCI 검토'),
+        dict(direction='손금산입',disposition='△유보',amount='100',reserve_movement='-100',legal_basis='평가 차이 검토')]
+  return workpapers.approve(self.val_id,'reviewer','평가 근거와 장부 차이 확인함',rows,True)
  def test_manual_entry_blocked(self):
-  with self.assertRaisesRegex(ValueError,'비활성화'):self.closing.add_entry(2026,1,'X','x',1,'memo')
+  with self.assertRaisesRegex(ValueError,'비활성화'):closing.add_entry(2026,1,'X','x',1,'memo')
  def test_cancel_reverses_without_deleting_and_regenerate(self):
-  self.approve()
-  self.assertEqual(self.closing.summary(2026)['ending']['1|FVOCI_TRADE'],'-100')
-  self.wp.cancel_approval(self.id,'reviewer','근거가 잘못되어 재검토함')
-  summary=self.closing.summary(2026)
+  self.approve_sale()
+  self.assertEqual(closing.summary(2026)['ending']['1|FVOCI_TRADE'],'100')
+  workpapers.cancel_approval(self.id,'reviewer','처분 근거를 다시 검토하기 위함')
+  summary=closing.summary(2026)
   self.assertEqual(summary['ending'],{})
   self.assertEqual(len(summary['entries']),2)
-  self.assertEqual(self.wp.list_workpapers(2026)['items'][0]['status'],'CANCELLED')
-  self.assertEqual(self.wp.generate(2026,1,[self.candidate])['created'],1)
-  items=self.wp.list_workpapers(2026)['items']
-  self.assertEqual(len(items),2)
-  self.assertEqual(items[1]['source_key'],'trade:2:1:R2')
-  with self.assertRaisesRegex(ValueError,'취소 가능한'):self.wp.cancel_approval(self.id,'reviewer','근거가 잘못되어 재검토함')
+  self.assertEqual(workpapers.generate(2026,1)['created'],1)
+  self.assertEqual(workpapers.generate(2026,1)['created'],0)
+  items=workpapers.list_workpapers(2026)['items']
+  self.assertEqual(items[-1]['source_key'],'trade:2:1:R2')
+  with self.assertRaisesRegex(ValueError,'취소 가능한'):workpapers.cancel_approval(self.id,'reviewer','중복 취소를 시도하는 테스트')
  def test_close_blocks_unapproved_and_unreconciled(self):
-  self.storage.save_validation({'year':2026,'summary':{'ERROR':0,'WARNING':0}},1)
-  positions=[{'assetId':1,'qty':0,'book':0,'tax':0}]
-  with self.assertRaisesRegex(ValueError,'미승인'):self.closing.close_year(2026,'reviewer','검토',positions=positions)
-  self.approve()
-  with self.assertRaisesRegex(ValueError,'유보 대사'):self.closing.close_year(2026,'reviewer','검토',positions=positions)
-  self.wp.cancel_approval(self.id,'reviewer','기존 환입 조정 재검토')
-  with self.assertRaisesRegex(ValueError,'미작성'):self.closing.close_year(2026,'reviewer','검토',positions=positions)
+  run_validation(2026,1)
+  with self.assertRaisesRegex(ValueError,'미승인'):closing.close_year(2026,'reviewer','검토',True,self.positions)
+  self.approve_sale();self.approve_valuation()
+  # Balanced but incorrect browser book/tax values used to bypass the close gate.
+  with self.assertRaisesRegex(ValueError,'재계산 불일치'):
+   closing.close_year(2026,'reviewer','검토',True,[{'assetId':1,'qty':0,'book':10,'tax':10}])
  def test_close_succeeds_after_reapproved_and_reconciled(self):
-  self.storage.save_validation({'year':2026,'summary':{'ERROR':0,'WARNING':0}},1)
-  self.approve();self.wp.cancel_approval(self.id,'reviewer','원가 검토 후 수정 예정')
-  self.wp.generate(2026,1,[self.candidate]);new_id=self.wp.list_workpapers(2026)['items'][-1]['id']
-  rows=[dict(direction='익금산입',disposition='기타',amount='200',reserve_movement='0',legal_basis='근거 검토')]
-  self.wp.approve(new_id,'reviewer','환입액 없음 검토',rows,True) if False else None
-  # Approved reserve of +100 and -100 nets to zero; demonstrates the close gate.
-  rows.extend([dict(direction='손금불산입',disposition='유보',amount='100',reserve_movement='100',legal_basis='발생 근거'),dict(direction='손금산입',disposition='△유보',amount='100',reserve_movement='-100',legal_basis='환입 근거')])
-  self.wp.approve(new_id,'reviewer','잔액과 조정 확인함',rows,True)
-  out=self.closing.close_year(2026,'reviewer','검토 완료',positions=[{'assetId':1,'qty':0,'book':0,'tax':0}])
+  run_validation(2026,1)
+  self.approve_valuation();self.approve_sale()
+  workpapers.cancel_approval(self.id,'reviewer','원천 근거 재확인 후 재승인함')
+  workpapers.generate(2026,1)
+  self.id=workpapers.list_workpapers(2026)['items'][-1]['id']
+  self.approve_sale()
+  out=closing.close_year(2026,'reviewer','최종 근거 검토 완료',True,self.positions)
   self.assertTrue(out['close'])
-  with self.assertRaisesRegex(ValueError,'확정'):self.wp.cancel_approval(new_id,'reviewer','확정 후 취소 시도')
-
-if __name__=='__main__':unittest.main()
+  self.assertEqual(out['ending'],{'1|FVOCI_TRADE':'100','1|FVOCI_VALUATION':'-100'})
+  with self.assertRaisesRegex(ValueError,'확정'):workpapers.cancel_approval(self.id,'reviewer','확정 후 취소를 시도하는 테스트')

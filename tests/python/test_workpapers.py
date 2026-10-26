@@ -9,10 +9,11 @@ class WorkpaperTests(unittest.TestCase):
             try:
                 from app.server.workpapers import generate,list_workpapers,approve
                 state={'master':[],'assets':[{'id':1,'stock_code':'005930','classification':'FVOCI'}],
-                       'trades':[],'valuations':[{'id':3,'assetId':1,'date':'2026-12-31'}],
+                       'trades':[{'id':1,'assetId':1,'date':'2026-01-01','type':'BUY','qty':10,'price':100,'amount':1000}],
+                       'valuations':[{'id':3,'assetId':1,'date':'2026-12-31','price':120,'qty':10,'fairValue':1200}],
                        'adjustments':[],'taxPolicyYears':[],'taxPolicy':{},'taxBasis':{},'stockPolicies':{},'fiscalEndMonth':12,'ids':{}}
                 storage.save_state(state,0)
-                item={'asset_id':1,'source_type':'valuation','source_id':3,'classification':'FVOCI','candidate_adjustment':0,'reserve_change':-200,'book_pl':0,'tax_pl':0,'oci_change':200,'oci_equity_transfer':0}
+                item={'asset_id':1,'source_type':'valuation','source_id':3,'classification':'FVOCI','date':'2026-12-31','event':'VALUATION','tax_basis':1000,'book_basis':1200,'candidate_adjustment':0,'reserve_change':-200,'book_pl':0,'tax_pl':0,'oci_change':200,'oci_equity_transfer':0}
                 self.assertEqual(generate(2026,1,[item])['created'],1)
                 self.assertEqual(generate(2026,1,[item])['created'],0)
                 wp=list_workpapers(2026)['items'][0]

@@ -95,7 +95,7 @@ async function runValidation(){
   const result=calculation(end);
   const priorYear=year-1;
   // The previous closing position is a comparison reference, not a separately approved opening ledger.
-  const positions=result.positions.map(p=>({assetId:p.asset.id,qty:p.qty,book:p.book,tax:p.tax,reserve:p.reserve}));
+  const positions=result.positions.map(p=>({assetId:p.asset.id,qty:p.qty,book:p.book,tax:p.tax,reserve:p.reserve,oci:p.oci,activeOCI:p.activeOCI,retainedDisposalOCI:p.retainedDisposalOCI}));
   const out=await dbRequest('/api/validate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({year,expected_revision:dbRevision,calculated:{positions}})});
   lastValidationRun=out.run_id;
   const sums=out.summary;
@@ -132,7 +132,7 @@ initDatabase();
 </script><script src="/js/calculation.js"></script><script>
 /* K-IFRS / Korean corporation-tax illustrative calculation engine, 2026 baseline. */
 const originalSaveTrade=saveTrade,originalSaveValuation=saveValuation,originalRenderAll=renderAll;
-const roundW=n=>Math.round((n+Number.EPSILON)*100)/100;
+const roundW=n=>Math.sign(n)*Math.round((Math.abs(n)+Number.EPSILON*Math.max(1,Math.abs(n))*8)*100)/100||0;
 const BOOK_METHODS=['TOTAL','MOVING','FIFO','SPECIFIC'];
 const TAX_METHODS=['TOTAL','MOVING'];
 function stockPolicy(code){
@@ -389,7 +389,7 @@ async function refreshClosingUI(){
  const keys=[...new Set([...Object.keys(out.opening),...Object.keys(out.movements),...Object.keys(out.ending)])];
  const rows=keys.map(k=>[esc(k),won(out.opening[k]||0),won(out.movements[k]||0),won(out.ending[k]||0)]);
  const positions=calculation(fiscalEndDate(year)).positions;
- const compare=positions.map(p=>{const aid=String(p.asset.id),actual=Object.entries(out.ending).filter(([k])=>k.split('|')[0]===aid).reduce((n,[,v])=>n+Number(v),0),expected=p.tax-p.book,diff=actual-expected;return [esc(p.asset.asset_name),esc(p.asset.classification),won(expected),won(actual),won(diff),Math.abs(diff)<=1?'일치':'불일치'];});
+ const compare=positions.map(p=>{const aid=String(p.asset.id),actual=Object.entries(out.ending).filter(([k])=>k.split('|')[0]===aid).reduce((n,[,v])=>n+Number(v),0),expected=p.tax-p.book,diff=actual-expected;return [esc(p.asset.asset_name),esc(p.asset.classification),won(expected),won(actual),won(diff),Math.abs(diff)<0.005?'일치':'불일치'];});
  document.getElementById('closingResult').innerHTML='<b>'+year+' 사업연도</b> · '+(out.close?'확정됨':'미확정')+' · 직전 결산 '+(out.prior_closed?'확정':'미확정')+table(['자산|유보항목','기초','당기 증감','기말'],rows)+'<h4>기말 유보 자동 대사 (회계·세무 장부금액 기준)</h4>'+table(['종목','분류','세무−회계','승인 유보잔액','차이','검증'],compare)+'<p class="hint">FVOCI 처분의 환입은 검증표에서 담당자가 확인해야 합니다. 차이가 있으면 결산 확정이 차단됩니다.</p>';
  }catch(e){document.getElementById('closingResult').textContent='조회 실패: '+e.message}
 }
@@ -404,14 +404,8 @@ let currentWorkpapers=[];
 async function generateWorkpapersUI(){
  try{
   await dbSaveQueue;
-  const year=Number($('validateYear').value),end=fiscalEndDate(year),rows=calculation(end).ledger;
-  const candidates=rows.filter(r=>!r.error&&fiscalYear(r.date)===year&&['SELL','VALUATION'].includes(r.type)).map(r=>({
-   asset_id:r.asset.id,stock_code:r.asset.stock_code,asset_name:r.asset.asset_name,
-   classification:r.asset.classification,source_type:r.kind==='valuation'?'valuation':'trade',source_id:r.sourceId,
-   date:r.date,event:r.type,book_pl:r.bookPL,tax_pl:r.taxPL,oci_change:r.ociChange,
-   oci_equity_transfer:r.ociEquityTransfer||0,fvoci_disposal_policy:r.fvociDisposalPolicy||null,allocation_effects:r.allocationEffects||[],candidate_adjustment:r.adj,reserve_change:r.reserveChange,
-   tax_basis:r.tax,book_basis:r.book,note:r.desc,recognition:r.asset.classification==='FVOCI'?'OCI':'PL'
-  }));
+  const year=Number($('validateYear').value);
+  const candidates=InvestmentEngine.workpaperCandidates(db,year);
   const result=await dbRequest('/api/workpapers/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({year,expected_revision:dbRevision,candidates})});
   notify(result.created+'건의 검증표 초안을 생성했습니다.');await loadWorkpapersUI();
  }catch(e){notify('검증표 생성 실패: '+e.message)}
@@ -427,25 +421,17 @@ async function loadWorkpapersUI(){
  }catch(e){notify('검증표 조회 실패: '+e.message)}
 }
 function suggestedWorkpaperRows(a){
- const rows=[];
- const add=(signed,disposition,movement,reason)=>{
+ const rows=[],effects=a.allocation_effects||[{assetId:a.asset_id,reserveChange:a.reserve_change}];
+ const movementTotal=effects.reduce((sum,e)=>sum+Number(e.reserveChange||0),0);
+ const other=Math.round((Number(a.candidate_adjustment||0)-movementTotal)*100)/100;
+ const add=(signed,disposition,movement,assetId,reason)=>{
   if(Math.abs(signed)<0.005)return;
-  rows.push({direction:signed>0?'익금산입':'손금산입',disposition,amount:String(Math.abs(signed)),reserve_movement:String(movement),legal_basis:'',review_hint:reason});
+  rows.push({asset_id:assetId,direction:signed>0?'익금산입':'손금산입',disposition,amount:String(Math.abs(signed)),reserve_movement:String(movement),legal_basis:'',review_hint:reason});
  };
- if(a.classification==='FVOCI'){
-  if(a.event==='VALUATION'){
-   // OCI is not profit or loss; show the offsetting taxable-income and reserve rows.
-   const gain=Number(a.oci_change||0);
-   add(gain,'기타',0,'OCI 인식 금액의 세무조정 검토');
-   add(-gain,gain>=0?'△유보':'유보',-gain,'평가로 인한 장부가-세무원가 차이 검토');
-  }else if(a.event==='SELL'){
-   add(Number(a.tax_pl||0),'기타',0,'처분 시 세법상 손익 반영 검토');
-   const reserve=Number(a.reserve_change||0);
-   add(reserve,reserve>0?'유보':'△유보',reserve,'기존 유보 환입 및 잔여 유보 대사 필요: 계산 후보는 회계분류별 통합 원가 배분과 다를 수 있음');
-  }
- }else{
-  const adj=Number(a.candidate_adjustment||0),reserve=Number(a.reserve_change||0);
-  add(adj,reserve>0?'유보':reserve<0?'△유보':'기타',reserve,'당기손익 조정 및 유보 대사 검토');
+ add(other,'기타',0,a.asset_id,'과세소득 조정 후보에서 자산별 장부 차이 증감을 뺀 나머지. 소득처분은 담당자 검토 필요');
+ for(const effect of effects){
+  const movement=Number(effect.reserveChange||0);
+  add(movement,movement>0?'유보':'△유보',movement,effect.assetId,'서버 독립 재계산의 자산별 장부 차이 증감. 법적 근거 확인 후 승인');
  }
  return rows;
 }
@@ -457,12 +443,15 @@ function showWorkpaperUI(id){
  const direction=first.direction,disposition=first.disposition;
  $('workpaperDetail').innerHTML=`<div class="panel"><h3>검증표 #${id} · ${esc(w.status)}</h3>
  <p>종목 ${esc(a.asset_name)} (${esc(a.stock_code)}) · ${esc(a.date)} · ${esc(a.event)} · ${esc(a.classification)}</p>
+ <p class="notice">서버 독립 재계산: ${esc(a.calculation?.engine_version||'기존 검증표 — 재생성 필요')} · 원천 버전 ${esc(a.calculation?.source_revision??'—')}<br>계산 근거 ${esc(a.calculation?.digest?.slice(0,16)||'미기록')}</p>
  ${table(['회계 인식','회계 PL','세법상 손익','OCI 변동','과세소득 조정 후보','유보 증감 후보'],[[esc(a.recognition),won(a.book_pl),won(a.tax_pl),won(a.oci_change),won(a.candidate_adjustment),won(a.reserve_change)]])}
- <h4>자동 검증 및 법령 검토</h4>${checks}<p class="hint">자동 생성 조정 초안은 ${suggested.length}행입니다. FVOCI 처분 시 유보 환입 후보는 통합 원가 배분과 다를 수 있으므로 검토자가 실제 환입액을 확인하고 승인해야 합니다.</p><p class="hint">법령 참고: 법인세법 제15·19·42조, 시행령 제75·106조, K-IFRS 1109. 실제 적용 요건·시행 시점·예외 규정은 검토자가 확인해야 합니다. 법적 적정성 자동 인증 아님.</p>
- ${w.status==='DRAFT'?`<div class="formgrid"><div class="field"><label>검토자</label><input id="wpReviewer"></div><div class="field"><label>조정 방향</label><select id="wpDirection"><option>익금산입</option><option>손금산입</option><option>익금불산입</option><option>손금불산입</option></select></div><div class="field"><label>소득처분</label><select id="wpDisposition"><option>유보</option><option>△유보</option><option>기타</option><option>기타사외유출</option><option>상여</option><option>배당</option></select></div><div class="field"><label>조정 금액(양수)</label><input id="wpAmount" type="number" min="0.01" step="any" value="${first.amount}"></div><div class="field"><label>유보 증감액(부호 포함)</label><input id="wpReserve" type="number" step="any" value="0"></div><div class="field full"><label>적용 법령 및 판단 근거</label><textarea id="wpBasis" placeholder="해당 사업연도 적용 조문, 예외 검토 및 소득처분 근거"></textarea></div><div class="field full"><label>추가 조정 행 (JSON 배열, 선택)</label><textarea id="wpExtra" placeholder='[ {"direction":"익금산입","disposition":"기타","amount":"200","reserve_movement":"0","legal_basis":"검토 근거"} ]'></textarea><p class="hint">한 거래의 복수 조정은 추가 행에 JSON 배열로 입력할 수 있습니다. 각 행의 법령·검토 근거를 반드시 입력하세요.</p></div><div class="field full"><label>검토 의견(10자 이상)</label><textarea id="wpNote"></textarea></div><div class="field full"><label><input id="wpAcknowledge" type="checkbox"> 적용 법령, 조정 방향, 소득처분 및 유보 환입을 검토했습니다.</label></div><div class="field full"><button class="btn primary" onclick="approveWorkpaperUI(${id})">검토 완료 및 승인 · 유보원장 반영</button></div></div><p class="hint">추가 조정 행은 JSON 배열 형식으로 입력합니다. 편집형 다중 행 UI는 추후 개선 대상입니다.</p>`:`<p class="notice">${esc(w.status)} · 승인자 ${esc(w.reviewer||'—')} · ${esc(w.approved_at||'—')}<br>검토 의견: ${esc(w.review_note||'—')}</p>${w.status==='APPROVED'?`<button class="btn danger" onclick="cancelWorkpaperUI(${id})">승인 취소 · 유보 역분개</button>`:''}`}
+ ${table(['배분 대상 자산','회계장부','배분 세무원가','장부 차이 증감'],(a.allocation_effects||[]).map(e=>[esc(assetLabel(getAsset(e.assetId)||{id:e.assetId})),won(e.book),won(e.tax),won(e.reserveChange)]))}
+ <h4>자동 검증 및 법령 검토</h4>${checks}<p class="hint">자동 생성 조정 초안은 ${suggested.length}행입니다. 서버 계산과 자산별 유보 증감을 대사합니다. 소득처분과 법적 근거는 검토자가 확인해야 합니다.</p><p class="hint">법령 참고: 법인세법 제15·19·42조, 시행령 제75·106조, K-IFRS 1109. 실제 적용 요건·시행 시점·예외 규정은 검토자가 확인해야 합니다. 법적 적정성 자동 인증 아님.</p>
+ ${w.status==='DRAFT'?`<div class="formgrid"><div class="field"><label>검토자</label><input id="wpReviewer"></div><div class="field"><label>조정 대상 자산</label><select id="wpAsset">${db.assets.map(x=>`<option value="${x.id}">${esc(assetLabel(x))}</option>`).join('')}</select></div><div class="field"><label>조정 방향</label><select id="wpDirection"><option>익금산입</option><option>손금산입</option><option>익금불산입</option><option>손금불산입</option></select></div><div class="field"><label>소득처분</label><select id="wpDisposition"><option>유보</option><option>△유보</option><option>기타</option><option>기타사외유출</option><option>상여</option><option>배당</option></select></div><div class="field"><label>조정 금액(양수)</label><input id="wpAmount" type="number" min="0.01" step="any" value="${first.amount}"></div><div class="field"><label>유보 증감액(부호 포함)</label><input id="wpReserve" type="number" step="any" value="0"></div><div class="field full"><label>적용 법령 및 판단 근거</label><textarea id="wpBasis" placeholder="해당 사업연도 적용 조문, 예외 검토 및 소득처분 근거"></textarea></div><div class="field full"><label>추가 조정 행 (JSON 배열, 선택)</label><textarea id="wpExtra" placeholder='[ {"direction":"익금산입","disposition":"기타","amount":"200","reserve_movement":"0","legal_basis":"검토 근거"} ]'></textarea><p class="hint">한 거래의 복수 조정은 추가 행에 JSON 배열로 입력할 수 있습니다. 각 행의 법령·검토 근거를 반드시 입력하세요.</p></div><div class="field full"><label>검토 의견(10자 이상)</label><textarea id="wpNote"></textarea></div><div class="field full"><label><input id="wpAcknowledge" type="checkbox"> 적용 법령, 조정 방향, 소득처분 및 유보 환입을 검토했습니다.</label></div><div class="field full"><button class="btn primary" onclick="approveWorkpaperUI(${id})">검토 완료 및 승인 · 유보원장 반영</button></div></div><p class="hint">추가 조정 행은 JSON 배열 형식으로 입력합니다. 편집형 다중 행 UI는 추후 개선 대상입니다.</p>`:`<p class="notice">${esc(w.status)} · 승인자 ${esc(w.reviewer||'—')} · ${esc(w.approved_at||'—')}<br>검토 의견: ${esc(w.review_note||'—')}</p>${w.status==='APPROVED'?`<button class="btn danger" onclick="cancelWorkpaperUI(${id})">승인 취소 · 유보 역분개</button>`:''}`}
  </div>`;
  if(w.status==='DRAFT'){
   $('wpDirection').value=direction;$('wpDisposition').value=disposition;
+  $('wpAsset').value=String(first.asset_id||a.asset_id);
   $('wpReserve').value=first.reserve_movement;
   $('wpExtra').value=JSON.stringify(suggested.slice(1).map(({review_hint,...x})=>x),null,2);
  }
@@ -470,10 +459,11 @@ function showWorkpaperUI(id){
 async function approveWorkpaperUI(id){
  try{
   const disposition=$('wpDisposition').value;
-  const adjustment={direction:$('wpDirection').value,disposition,amount:$('wpAmount').value,reserve_movement:$('wpReserve').value,legal_basis:$('wpBasis').value};
+  const adjustment={asset_id:$('wpAsset').value,direction:$('wpDirection').value,disposition,amount:$('wpAmount').value,reserve_movement:$('wpReserve').value,legal_basis:$('wpBasis').value};
   const extra=$('wpExtra').value.trim()?JSON.parse($('wpExtra').value):[];if(!Array.isArray(extra))throw Error('추가 조정 행은 JSON 배열이어야 합니다.');
   if(!confirm('세무조정을 승인하고 유보 해당 행을 원장에 반영할까요? 승인 후 변경할 수 없습니다.'))return;
-  const result=await dbRequest('/api/workpapers/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,reviewer:$('wpReviewer').value,note:$('wpNote').value,acknowledge:$('wpAcknowledge').checked,adjustments:[adjustment,...extra]})});
+  const adjustments=[adjustment,...extra].filter(a=>!(Number(a.amount)===0&&Number(a.reserve_movement)===0));
+  const result=await dbRequest('/api/workpapers/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,reviewer:$('wpReviewer').value,note:$('wpNote').value,acknowledge:$('wpAcknowledge').checked,adjustments})});
   notify('승인 완료. 유보원장 반영 '+result.reserve_posted+'건');await loadWorkpapersUI();showWorkpaperUI(id);await refreshClosingUI();
  }catch(e){notify('승인 실패: '+e.message)}
 }

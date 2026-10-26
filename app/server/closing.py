@@ -81,33 +81,53 @@ def close_year(year, reviewer, note, acknowledge_warnings=False, positions=None)
     with LOCK,connect() as c:
         setup(c);c.execute('BEGIN IMMEDIATE')
         if c.execute('SELECT 1 FROM fiscal_closes WHERE fiscal_year=?',(year,)).fetchone():raise ValueError('이미 확정된 사업연도입니다.')
-        current=read_state();st=current['state'] or {}
+        current=read_state(c);st=current['state'] or {}
+        from .calculation import calculate_year, compare_positions, evidence, candidates_for_year
+        from .reconciliation import validation_result
+        calculated=calculate_year(st,year)
+        proof=evidence(calculated,current['revision'])
         # A closing must use a previously saved validation run on exactly the same source revision.
+        if not c.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='validation_runs'").fetchone():
+            raise ValueError('현재 데이터 버전으로 자동 검증을 먼저 실행하세요.')
         row=c.execute('SELECT id,result_json FROM validation_runs WHERE fiscal_year=? AND source_revision=? ORDER BY id DESC LIMIT 1',(year,current['revision'])).fetchone()
         if not row:raise ValueError('현재 데이터 버전으로 자동 검증을 먼저 실행하세요.')
         result=json.loads(row['result_json'])
+        if result.get('calculation')!=proof:raise ValueError('서버 재계산 근거가 없는 검증 이력입니다. 자동 검증을 다시 실행하세요.')
         if result['summary']['ERROR']:raise ValueError('검증 오류가 남아 있어 결산 확정이 차단됩니다.')
-        if result['summary']['WARNING'] and not acknowledge_warnings:raise ValueError('검증 경고를 검토하고 승인 여부를 명시하세요.')
-        from .workpapers import setup as setup_workpapers
+        fresh=validation_result(st,year,calculated,connection=c)
+        if fresh['summary']['ERROR']:raise ValueError('서버 재계산 검증 오류가 남아 있습니다.')
+        if (result['summary']['WARNING'] or fresh['summary']['WARNING']) and not acknowledge_warnings:raise ValueError('검증 경고를 검토하고 승인 여부를 명시하세요.')
+        from .workpapers import setup as setup_workpapers, verify_candidate, verify_reserves
         setup_workpapers(c)
-        candidates=c.execute('SELECT id,status,source_key,source_revision FROM tax_workpapers WHERE fiscal_year=?',(year,)).fetchall()
+        candidates=c.execute('SELECT * FROM tax_workpapers WHERE fiscal_year=?',(year,)).fetchall()
         if any(r['status']=='DRAFT' for r in candidates):
             raise ValueError('미승인 검증표가 있어 결산 확정이 차단됩니다.')
         if any(r['source_revision']!=current['revision'] for r in candidates if r['status']=='APPROVED'):
             raise ValueError('원본 데이터가 변경된 검증표가 있습니다. 재검증이 필요합니다.')
-        # Coverage: every SELL and VALUATION source must have an approved workpaper.
+        # Include purchases that redistribute tax basis across classifications.
         month=int(st.get('fiscalEndMonth') or 12)
-        required=set()
-        for table,kind in (('trades','trade'),('valuations','valuation')):
-            for r in st.get(table,[]):
-                if (table=='valuations' or r.get('type')=='SELL') and fiscal_year(r['date'],month)==year:
-                    required.add(f'{kind}:{r["id"]}:{r["assetId"]}')
+        required={f'{r["source_type"]}:{r["source_id"]}:{r["asset_id"]}' for r in candidates_for_year(calculated,year,month)}
         approved={r['source_key'].split(':R')[0] for r in candidates if r['status']=='APPROVED'}
         if required-approved:raise ValueError('미작성 검증표: '+', '.join(sorted(required-approved)[:5]))
+        for wp in candidates:
+            if wp['status']!='APPROVED':continue
+            candidate=json.loads(wp['candidate_json'])
+            expected=verify_candidate(candidate,calculated,current['revision'],year,month)
+            approval=json.loads(wp['approved_json'])
+            if approval.get('calculation')!=proof:raise ValueError('서버 재계산 근거가 없는 승인입니다. 취소 후 재승인하세요.')
+            verify_reserves(approval['adjustments'],expected)
+            postings={f'WORKPAPER:{wp["id"]}:{i}':a for i,a in enumerate(approval['adjustments']) if a['disposition'] in ('유보','△유보')}
+            actual_postings=list(c.execute('SELECT * FROM reserve_entries WHERE source_ref LIKE ?',(f'WORKPAPER:{wp["id"]}:%',)))
+            if len(actual_postings)!=len(postings):raise ValueError('승인 유보 전기 이력 불일치')
+            for posting in actual_postings:
+                a=postings.get(posting['source_ref'])
+                if not a or _amount(a['reserve_movement'])!=_amount(posting['amount']) or str(a.get('asset_id',candidate['asset_id']))!=posting['asset_id']:
+                    raise ValueError('승인 유보 전기 금액·자산 불일치')
         if not isinstance(positions,list):raise ValueError('기말 회계·세무 장부금액 대사 자료가 필요합니다.')
+        compare_positions(positions,calculated)
         assets={str(a['id']):a for a in st.get('assets',[])}
         actual={}
-        for item in positions:
+        for item in calculated['positions']:
             aid=str(item.get('assetId'))
             if aid not in assets or aid in actual:raise ValueError('기말 대사 자산 ID 오류')
             qty=_amount(item.get('qty')); book=_amount(item.get('book'));tax=_amount(item.get('tax'))
@@ -131,17 +151,20 @@ def close_year(year, reviewer, note, acknowledge_warnings=False, positions=None)
         for aid,v in actual.items():
             balance=sum((_amount(amount) for key,amount in ending.items() if key.split('|')[0]==aid),Decimal(0))
             expected=v['tax']-v['book']
-            if abs(balance-expected)>Decimal('1'):
+            if balance!=expected:
                 raise ValueError(f'자산 {aid} 유보 대사 불일치: 원장 {balance}, 세무-회계 {expected}. FVOCI 처분 환입·원가 배분을 재검토하세요.')
         # Classification-level tax basis must add up to stock-wide tax basis;
         # this is a second, distinct reconciliation from reserve balances.
         for code in {a.get('stock_code') for a in assets.values()}:
             matching=[aid for aid,a in assets.items() if a.get('stock_code')==code]
+            pool=next(p for p in calculated['stockPools'] if p['stock_code']==code)
+            if sum((actual[aid]['tax'] for aid in matching),Decimal(0))!=_amount(pool['tax']):
+                raise ValueError(f'{code} 종목 통합 세무원가 배분 불일치')
             if any(actual[aid]['qty']==0 and (abs(actual[aid]['book'])>1 or abs(actual[aid]['tax'])>1) for aid in matching):
                 raise ValueError(f'{code} 전량 처분 자산 장부 잔액이 남았습니다.')
         now=datetime.now(timezone.utc).isoformat()
         c.execute('INSERT INTO fiscal_closes VALUES(?,?,?,?,?,?,?,?,?)',(year,current['revision'],row['id'],now,json.dumps(opening),json.dumps(movements),json.dumps(ending),str(reviewer),str(note)))
-        c.execute('INSERT INTO closing_events(fiscal_year,event,recorded_at,detail_json) VALUES(?,?,?,?)',(year,'CLOSE',now,json.dumps({'revision':current['revision'],'validation_run':row['id'],'reviewer':reviewer,'warnings_approved':bool(acknowledge_warnings)},ensure_ascii=False)))
+        c.execute('INSERT INTO closing_events(fiscal_year,event,recorded_at,detail_json) VALUES(?,?,?,?)',(year,'CLOSE',now,json.dumps({'revision':current['revision'],'validation_run':row['id'],'reviewer':reviewer,'warnings_approved':bool(acknowledge_warnings),'calculation':proof,'positions':calculated['positions']},ensure_ascii=False)))
         c.commit()
     return summary(year)
 

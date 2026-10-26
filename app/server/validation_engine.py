@@ -125,7 +125,7 @@ def validate(state, year, calculated=None):
         if calculated.get('prior_reserves') is not None:
             for aid, prior in calculated['prior_reserves'].items():
                 opening=(calculated.get('opening_reserves') or {}).get(aid)
-                if opening is not None and abs(D(prior)-D(opening))>Decimal('1'):
+                if opening is not None and D(prior)!=D(opening):
                     add('RES_CARRYFORWARD','ERROR','전기 유보 이월 불일치','전기 기말과 당기 기초 유보잔액이 다릅니다.',aid,prior,opening)
         else:add('RES_CARRYFORWARD_UNVERIFIED','WARNING','전기 유보 이월 검증 미완료','독립된 전기 확정잔액·당기 기초잔액이 없어 완전한 이월 대사는 보류합니다.',year)
     return {'year':year,'year_end':end.isoformat(),'issues':issues,'summary':{s:sum(i['severity']==s for i in issues) for s in ('ERROR','WARNING','INFO')},'scope':'일반 국내 상장주식 검증용; 신고 적합성은 별도 판단'}

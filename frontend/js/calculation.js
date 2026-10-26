@@ -5,7 +5,7 @@
  else root.InvestmentEngine=api;
 })(globalThis,function(){
 'use strict';
-const roundW=n=>Math.round((n+Number.EPSILON)*100)/100;
+const roundW=n=>Math.sign(n)*Math.round((Math.abs(n)+Number.EPSILON*Math.max(1,Math.abs(n))*8)*100)/100||0;
 function fiscalYear(date,endMonth=12){const [y,m]=date.slice(0,7).split('-').map(Number);return String(y+(m>Number(endMonth)?1:0));}
 function fiscalEndDate(year,endMonth=12){return year+'-'+String(endMonth).padStart(2,'0')+'-'+String(new Date(Number(year),endMonth,0).getDate()).padStart(2,'0');}
 const apiFiscalYear=fiscalYear;
@@ -233,5 +233,19 @@ function calculate(db,asOf='9999-12-31',options={}){
  return {positions,ledger,reconciliation};
 }
 
-return Object.freeze({calculate,fiscalYear,fiscalEndDate});
+function workpaperCandidates(state,year){
+ const result=calculate(state,fiscalEndDate(year,state.fiscalEndMonth||12));
+ if(result.ledger.some(r=>r.error))throw new Error('계산 오류가 있어 검증표를 생성할 수 없습니다. 원천 거래를 확인하세요.');
+ return result.ledger.filter(r=>fiscalYear(r.date,state.fiscalEndMonth||12)===String(year)&&
+  (['SELL','VALUATION'].includes(r.type)||(r.allocationEffects||[]).some(e=>Math.abs(e.reserveChange)>0))).map(r=>({
+   asset_id:r.asset.id,stock_code:r.asset.stock_code,asset_name:r.asset.asset_name,
+   classification:r.asset.classification,source_type:r.kind,source_id:r.sourceId,date:r.date,event:r.type,
+   book_pl:r.bookPL,tax_pl:r.taxPL,oci_change:r.ociChange,oci_equity_transfer:r.ociEquityTransfer||0,
+   fvoci_disposal_policy:r.fvociDisposalPolicy||null,allocation_effects:r.allocationEffects||[],
+   candidate_adjustment:r.adj,reserve_change:r.reserveChange,tax_basis:r.tax,book_basis:r.book,
+   note:r.desc,recognition:r.asset.classification==='FVOCI'?'OCI':'PL'
+  }));
+}
+
+return Object.freeze({calculate,fiscalYear,fiscalEndDate,workpaperCandidates});
 });
