@@ -29,7 +29,7 @@
 | SQLite | 정규화 원천·정책, 계산 실행·잔액, 복수 조정 행·승인·유보·결산과 감사 이력 저장. 기존 DB는 호환 유지 |
 | 자동 검증 | 수량/중복 거래/평가 누락/가격 기준일/일부 분개·장부금액 대사/신고 정책 확인 |
 | 서버 독립 재계산 | 저장된 원천을 독립 계산하여 브라우저 금액 비교, 승인 전 자산별 유보 증감 대사, 결산 전 기말 장부 재확인 |
-| 세무조정 검증표 | 거래별 초안 생성, 복수 조정 행, 검토 근거와 소득처분 확인 |
+| 세무조정 검증표 | 검토 순서별 화면, 표에서 복수 행 편집, 종목·승인 상태·계산 과정·원장 대사 |
 | 2026 조정 규칙 | 적용범위 확인 후 PL·OCI·자본 내 대체를 구분한 원인별 행 제안, 법령 출처·시행본·확인일 기록, 승인·결산 시 재검사 |
 | 승인 통제 | 승인된 유보·△유보만 원장 전기, 기타는 조정 이력에 보존 |
 | 정정 | 승인 취소 시 반대 부호 원장 행과 이력 보존, 새 검증표 재생성·재승인 |
@@ -54,6 +54,8 @@
        ↓
 사업연도 결산 확정 → 차기 이월
 ```
+
+[검토 화면 사용 안내](docs/REVIEW_WORKSPACE.md)는 표 편집·계산 과정·비동기 전환과 승인 보존을 설명합니다.
 
 화면별 입력 순서, 검토 방법, 승인·정정·결산 절차는 [`docs/WORKFLOW.md`](docs/WORKFLOW.md)에서 자세히 설명합니다.
 
@@ -117,6 +119,9 @@ node tests/js/test_reserve_labels.js
 node tests/js/test_tax_rule_ui.js
 node tests/js/test_fvoci_policy_years.js
 node tests/js/test_won_rounding.js
+node tests/js/test_review_model.js
+node tests/js/test_review_ui.js
+node tests/js/test_review_async.js
 ```
 
 테스트는 계산·검증·승인/취소의 일부 경로를 확인합니다. 브라우저 전체 업무 흐름, 실제 KRX API, 법인세 신고 결과에 대한 통합 테스트를 대체하지 않습니다.

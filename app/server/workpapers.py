@@ -6,7 +6,7 @@ from .storage import connect, LOCK, read_state
 from .closing import setup as setup_closing, _amount
 from .validation_engine import fiscal_year
 from .calculation import calculate_year, candidates_for_year, compare_candidate, evidence, number
-from .adjustment_rules import build_plan, verify_adjustments
+from .adjustment_rules import build_plan, verify_adjustments, normalize_adjustment_label
 
 
 def setup(c):
@@ -73,6 +73,8 @@ def generate(year, revision, candidates=None):
         state=current['state'] or {}
         calculated=calculate_year(state,year)
         canonical=candidates_for_year(calculated,year,int(state.get('fiscalEndMonth') or 12))
+        from app.server.review_presentation import attach_review_details
+        attach_review_details(state,calculated,canonical)
         for item in canonical:
             item['adjustment_plan']=build_plan(state,year,item)
         if candidates is not None:
@@ -183,6 +185,8 @@ def approve(workpaper_id,reviewer,note,adjustments,acknowledge):
         if disposition not in ('유보','△유보') and signed!=0:raise ValueError('유보 외 처분은 유보원장에 반영할 수 없습니다.')
         if disposition in ('유보','△유보') and abs(signed)!=amount:raise ValueError('유보 증감액과 조정금액이 일치해야 합니다.')
         row={'direction':direction,'disposition':disposition,'amount':str(amount),'reserve_movement':str(signed),'legal_basis':str(x.get('legal_basis','')).strip()}
+        if 'label' in x:
+            row['label']=normalize_adjustment_label(x['label'])
         if x.get('asset_id') is not None:row['asset_id']=str(x['asset_id'])
         prepared.append(row)
     if any(not a['legal_basis'] for a in prepared):raise ValueError('각 조정 행의 법령·검토 근거를 입력하세요.')

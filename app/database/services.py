@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from . import repository as repo
 from app.server.calculation import calculate_year, candidates_for_year, compare_candidate, compare_positions, evidence
-from app.server.adjustment_rules import build_plan, verify_adjustments
+from app.server.adjustment_rules import build_plan, verify_adjustments, normalize_adjustment_label
 from app.server.validation_engine import validate
 
 
@@ -171,6 +171,8 @@ def generate(c,year,revision,candidates=None):
     year=int(year);state,calculated,revision=context(c,year,revision)
     if closing_summary(c,year)['close']:raise ValueError('확정 사업연도에는 검증표를 생성할 수 없습니다.')
     canonical=candidates_for_year(calculated,year,int(state.get('fiscalEndMonth') or 12))
+    from app.server.review_presentation import attach_review_details
+    attach_review_details(state,calculated,canonical)
     if candidates is not None:
         if not isinstance(candidates,list) or len(candidates)>2000:raise ValueError('후보 데이터 형식 오류')
         expected={source_key(x):x for x in canonical};seen=set()
@@ -217,6 +219,8 @@ def prepared_rows(adjustments,item):
         if not basis:raise ValueError('각 조정 행의 법령·검토 근거를 입력하세요.')
         result.append(dict(asset_id=str(r.get('asset_id',item['asset_id'])),direction=direction,disposition=disposition,
                            amount=str(amount),reserve_movement=str(movement),legal_basis=basis))
+        if 'label' in r:
+            result[-1]['label']=normalize_adjustment_label(r['label'])
     return result
 
 
@@ -242,7 +246,7 @@ def approve(c,identifier,reviewer,note,adjustments,acknowledge):
     row_ids=[]
     for index,row in enumerate(rows,1):
         row_ids.append(repo.insert(c,'tax_adjustment_rows',company_id=repo.COMPANY,workpaper_id=wp['workpaper_id'],asset_id=int(row['asset_id']),row_no=index,
-                       label='담당자 검토 조정',direction=row['direction'],disposition=row['disposition'],amount=repo.decimal_text(row['amount']),
+                       label=row.get('label','담당자 검토 조정'),direction=row['direction'],disposition=row['disposition'],amount=repo.decimal_text(row['amount']),
                        reserve_movement=repo.decimal_text(row['reserve_movement']),legal_basis=row['legal_basis'],created_at=repo.now()))
     proof=dict(calculation=evidence(calculated,revision),adjustment_plan=expected['adjustment_plan'],acknowledged=True)
     decision=repo.insert(c,'workpaper_decisions',company_id=repo.COMPANY,workpaper_id=wp['workpaper_id'],action='APPROVE',actor=reviewer,reason=note,
@@ -307,6 +311,7 @@ def close_year(c,year,reviewer,note,acknowledge_warnings=False,positions=None):
         posts=c.execute("SELECT * FROM reserve_entries WHERE workpaper_id=? AND entry_type='POST' ORDER BY entry_id",(wp['id'],)).fetchall()
         expected_posts=[]
         for row,actual in zip(rows,stored):
+            if 'label' in row and row['label']!=actual['label']:raise ValueError('승인 조정 원인이 실제 행과 다릅니다.')
             for field in ('direction','disposition','legal_basis'):
                 if row[field]!=actual[field]:raise ValueError('승인 조정 행과 실제 행이 다릅니다.')
             if (int(row['asset_id'])!=actual['asset_id'] or Decimal(row['amount'])!=Decimal(actual['amount'])

@@ -140,3 +140,11 @@ def verify_adjustments(rows, item, plan):
                     d(r['amount']),d(r.get('reserve_movement',0)))
         if Counter(map(signature,rows)) != Counter(map(signature,plan['rows'])):
             raise ValueError('2026 조정 규칙의 원인별 복수 행과 다릅니다. 누락·상계·중복·소득처분을 확인하세요.')
+
+
+def normalize_adjustment_label(value):
+    """Use identical cause labels for legacy and normalized approval storage."""
+    label=str(value).strip() or '담당자 검토 조정'
+    if len(label)>200:
+        raise ValueError('조정 원인은 200자 이하로 입력하세요.')
+    return label
